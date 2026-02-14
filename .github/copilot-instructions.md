@@ -14,7 +14,7 @@ These instructions are for AI coding agents working in this repository.
 - Convenience shell wrappers exist (`dev-prepare.sh`, `dev-run.sh`, `dev-test.sh`, `dev-build.sh`, `dev-build-bump-ver.sh`) and delegate to npm scripts; `dev-build-bump-ver.sh` bumps version then builds.
 - Initial Vite + TypeScript + Three.js runtime scaffold exists (`index.html`, `src/main.ts`, `src/pwa/register-sw.ts`).
 - GitHub Actions Pages workflow scaffold exists (`.github/workflows/build-and-deploy.yml`) using the IdleGames-proven build/upload/deploy pattern.
-- Local build/release flow is validated; pending verification is first live GitHub Pages deployment (pathing, SW update lifecycle, offline installability).
+- Local build/release flow is validated and GitHub Pages is live at `https://timelessp.github.io/airshipone/`; remaining verification is SW update lifecycle, offline installability, and deep-link behavior.
 
 ## Product Direction (authoritative)
 

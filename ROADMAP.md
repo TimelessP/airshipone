@@ -122,13 +122,14 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [x] Configure Vite `base` for repository path deployment
 - [x] Add GitHub Actions workflow for build and deploy to Pages
 - [ ] Add SPA routing fallback strategy compatible with static hosting
-- [ ] Validate asset paths work from both local dev and Pages URL
+- [~] Validate asset paths work from both local dev and Pages URL
+- [x] Set canonical deployed homepage URL metadata (`https://timelessp.github.io/airshipone/`)
 
 ### 0.2.a Pending Post-Deploy Validation (After first GitHub Pages release)
-- [ ] Run production smoke test on live GitHub Pages URL
-  - [ ] Confirm app shell loads without console errors on first visit
-  - [ ] Confirm `dist/version.js` value matches released `package.json` version
-  - [ ] Confirm `sw.js` cache name reflects released package version
+- [~] Run production smoke test on live GitHub Pages URL
+  - [~] Confirm app shell loads without console errors on first visit
+  - [x] Confirm `dist/version.js` value matches released `package.json` version
+  - [x] Confirm `sw.js` cache name reflects released package version
 - [ ] Validate offline/PWA behavior on deployed origin
   - [ ] Installability check (manifest + standalone launch)
   - [ ] Offline refresh of app shell succeeds after first online visit

@@ -54,6 +54,7 @@ Use this skill whenever implementing or changing UI layout/styling.
 
 - `./dev-test.sh` passes.
 - `./dev-build.sh` passes.
+- Validate visual design on the live Pages URL: `https://timelessp.github.io/airshipone/`.
 - At common viewport sizes, no page scrollbars appear.
 - Text remains readable and visually consistent.
 - Button and panel outlines scale with `--u`.
