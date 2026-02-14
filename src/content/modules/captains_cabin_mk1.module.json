@@ -575,6 +575,903 @@
             1
           ]
         }
+      },
+      {
+        "id": "furn_bed_frame",
+        "primitive": "box",
+        "role": "furniture-bed-frame",
+        "center": [
+          0,
+          0.28,
+          0.99
+        ],
+        "size": [
+          2.02,
+          0.4,
+          1.02
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_bed_mattress",
+        "primitive": "box",
+        "role": "furniture-bed-mattress",
+        "center": [
+          0,
+          0.57,
+          0.99
+        ],
+        "size": [
+          1.94,
+          0.18,
+          0.96
+        ],
+        "material": {
+          "tileId": "paper-bright-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_locker",
+        "primitive": "box",
+        "role": "furniture-locker",
+        "center": [
+          0.875,
+          1.03,
+          -1.24
+        ],
+        "size": [
+          0.53,
+          1.9,
+          0.5
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_bookshelf_side_left",
+        "primitive": "box",
+        "role": "furniture-bookshelf-side",
+        "center": [
+          -1.125,
+          1.03,
+          -1.24
+        ],
+        "size": [
+          0.03,
+          1.9,
+          0.42
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_bookshelf_side_right",
+        "primitive": "box",
+        "role": "furniture-bookshelf-side",
+        "center": [
+          -0.625,
+          1.03,
+          -1.24
+        ],
+        "size": [
+          0.03,
+          1.9,
+          0.42
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_bookshelf_rear",
+        "primitive": "box",
+        "role": "furniture-bookshelf-rear",
+        "center": [
+          -0.875,
+          1.03,
+          -1.435
+        ],
+        "size": [
+          0.47,
+          1.9,
+          0.03
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_bookshelf_shelf_1",
+        "primitive": "box",
+        "role": "furniture-bookshelf-shelf",
+        "center": [
+          -0.875,
+          0.095,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_bookshelf_shelf_2",
+        "primitive": "box",
+        "role": "furniture-bookshelf-shelf",
+        "center": [
+          -0.875,
+          0.563,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_bookshelf_shelf_3",
+        "primitive": "box",
+        "role": "furniture-bookshelf-shelf",
+        "center": [
+          -0.875,
+          1.03,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_bookshelf_shelf_4",
+        "primitive": "box",
+        "role": "furniture-bookshelf-shelf",
+        "center": [
+          -0.875,
+          1.498,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_bookshelf_shelf_5",
+        "primitive": "box",
+        "role": "furniture-bookshelf-shelf",
+        "center": [
+          -0.875,
+          1.965,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_1",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -1.054,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_2",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.982,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_3",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.911,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_4",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.839,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_5",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.768,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_6",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.696,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_7",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -1.054,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_8",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.982,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_9",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.911,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_10",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.839,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_11",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.768,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_12",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.696,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_13",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -1.054,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_14",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.982,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_15",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.911,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_16",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.839,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_17",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.768,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_18",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.696,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_19",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -1.054,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_20",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.982,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_21",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.911,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_22",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.839,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_23",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.768,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_books_leather_24",
+        "primitive": "box",
+        "role": "furniture-books-leather",
+        "center": [
+          -0.696,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ],
+        "material": {
+          "tileId": "leather-brown-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_desk",
+        "primitive": "box",
+        "role": "furniture-desk",
+        "center": [
+          0,
+          0.46,
+          -1.14
+        ],
+        "size": [
+          1.1,
+          0.76,
+          0.56
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_chair_seat",
+        "primitive": "box",
+        "role": "furniture-chair-seat",
+        "center": [
+          0,
+          0.3,
+          -0.64
+        ],
+        "size": [
+          0.44,
+          0.44,
+          0.44
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_chair_back",
+        "primitive": "box",
+        "role": "furniture-chair-back",
+        "center": [
+          0,
+          0.74,
+          -0.46
+        ],
+        "size": [
+          0.44,
+          0.44,
+          0.08
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_a4_paper",
+        "primitive": "box",
+        "role": "furniture-paper-a4",
+        "center": [
+          0.18,
+          0.85,
+          -1.17
+        ],
+        "size": [
+          0.21,
+          0.01,
+          0.297
+        ],
+        "material": {
+          "tileId": "paper-bright-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
       }
     ]
   },
@@ -895,6 +1792,576 @@
           2.4,
           2.6,
           0.1
+        ]
+      },
+      {
+        "id": "blocked_furn_bed_frame",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          0.28,
+          0.99
+        ],
+        "size": [
+          2.02,
+          0.4,
+          1.02
+        ]
+      },
+      {
+        "id": "blocked_furn_bed_mattress",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          0.57,
+          0.99
+        ],
+        "size": [
+          1.94,
+          0.18,
+          0.96
+        ]
+      },
+      {
+        "id": "blocked_furn_locker",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0.875,
+          1.03,
+          -1.24
+        ],
+        "size": [
+          0.53,
+          1.9,
+          0.5
+        ]
+      },
+      {
+        "id": "blocked_furn_bookshelf_side_left",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -1.125,
+          1.03,
+          -1.24
+        ],
+        "size": [
+          0.03,
+          1.9,
+          0.42
+        ]
+      },
+      {
+        "id": "blocked_furn_bookshelf_side_right",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.625,
+          1.03,
+          -1.24
+        ],
+        "size": [
+          0.03,
+          1.9,
+          0.42
+        ]
+      },
+      {
+        "id": "blocked_furn_bookshelf_rear",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.875,
+          1.03,
+          -1.435
+        ],
+        "size": [
+          0.47,
+          1.9,
+          0.03
+        ]
+      },
+      {
+        "id": "blocked_furn_bookshelf_shelf_1",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.875,
+          0.095,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ]
+      },
+      {
+        "id": "blocked_furn_bookshelf_shelf_2",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.875,
+          0.563,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ]
+      },
+      {
+        "id": "blocked_furn_bookshelf_shelf_3",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.875,
+          1.03,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ]
+      },
+      {
+        "id": "blocked_furn_bookshelf_shelf_4",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.875,
+          1.498,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ]
+      },
+      {
+        "id": "blocked_furn_bookshelf_shelf_5",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.875,
+          1.965,
+          -1.225
+        ],
+        "size": [
+          0.47,
+          0.03,
+          0.39
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_1",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -1.054,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_2",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.982,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_3",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.911,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_4",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.839,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_5",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.768,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_6",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.696,
+          0.319,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_7",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -1.054,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_8",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.982,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_9",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.911,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_10",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.839,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_11",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.768,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_12",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.696,
+          0.786,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_13",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -1.054,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_14",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.982,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_15",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.911,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_16",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.839,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_17",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.768,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_18",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.696,
+          1.254,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_19",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -1.054,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_20",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.982,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_21",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.911,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_22",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.839,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_23",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.768,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_books_leather_24",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.696,
+          1.721,
+          -1.22
+        ],
+        "size": [
+          0.056,
+          0.418,
+          0.29
+        ]
+      },
+      {
+        "id": "blocked_furn_desk",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          0.46,
+          -1.14
+        ],
+        "size": [
+          1.1,
+          0.76,
+          0.56
+        ]
+      },
+      {
+        "id": "blocked_furn_chair_seat",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          0.3,
+          -0.64
+        ],
+        "size": [
+          0.44,
+          0.44,
+          0.44
+        ]
+      },
+      {
+        "id": "blocked_furn_chair_back",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          0.74,
+          -0.46
+        ],
+        "size": [
+          0.44,
+          0.44,
+          0.08
         ]
       }
     ],
@@ -1261,6 +2728,474 @@
       ],
       "rotationDeg": 0,
       "mirrorX": false
+    },
+    {
+      "mesh": "furn_bed_frame",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_bed_mattress",
+      "materialSlot": "albedo",
+      "tileId": "paper-bright-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_locker",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_bookshelf_side_left",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_bookshelf_side_right",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_bookshelf_rear",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_bookshelf_shelf_1",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_bookshelf_shelf_2",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_bookshelf_shelf_3",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_bookshelf_shelf_4",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_bookshelf_shelf_5",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_1",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_2",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_3",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_4",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_5",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_6",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_7",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_8",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_9",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_10",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_11",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_12",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_13",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_14",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_15",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_16",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_17",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_18",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_19",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_20",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_21",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_22",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_23",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_books_leather_24",
+      "materialSlot": "albedo",
+      "tileId": "leather-brown-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_desk",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_chair_seat",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_chair_back",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_a4_paper",
+      "materialSlot": "albedo",
+      "tileId": "paper-bright-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
     }
   ],
   "texturePalette": {
@@ -1269,7 +3204,10 @@
     "innerWall": "paper-256x256px",
     "ceiling": "paper-bright-256x256px",
     "window": "glass-pane-256x256px-alpha",
-    "trim": "brass-panel-256x256px"
+    "trim": "brass-panel-256x256px",
+    "wood": "oak-joined-boards-256x256px",
+    "leather": "leather-brown-256x256px",
+    "paper": "paper-bright-256x256px"
   },
   "tags": [
     "generated-shell",

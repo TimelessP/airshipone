@@ -222,7 +222,7 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [ ] Handle letterboxing and window resize events
 
 ### 2.2 Three.js Scene Foundation
-- [ ] Initialize renderer, scene, camera(s), and lighting baseline
+- [x] Initialize renderer, scene, camera(s), and lighting baseline
 - [ ] Define world scene and cabin scene boundaries
 - [ ] Add camera controller abstraction (external flight view + interior view)
 
@@ -314,6 +314,8 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [x] Add dedicated skill for module authoring process (`.github/skills/airship-one-asset-pipeline/SKILL.md`)
 - [x] Add first module template package under runtime content path (`src/content/modules/captains_cabin_mk1.module.json`)
 - [x] Add parameter-driven module shell generator (`scripts/generate-module-shell.mjs`) with `room/open/cockpit/cargo` profiles
+- [x] Use parameterized generator as source-of-truth for exact module variants via interior profiles (`auto|none|captains-cabin`)
+- [x] Add captain's cabin furnishing profile generation (bed, locker, bookshelf + leather-bound books, desk, chair, A4 desk paper)
 - [x] Add in-world join controls (`+` insert, `-` remove) with fixed-module removal guards
 - [x] Add proximity-gated join control visibility with center reticle interaction hint
 - [x] Add nearest-walkable player relocation when module-chain changes produce invalid occupancy

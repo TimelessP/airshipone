@@ -18,7 +18,8 @@ These instructions are for AI coding agents working in this repository.
 - Settings and local simulation state persist to browser local storage and round-trip via exported/imported JSON save envelopes.
 - Persistent full-width top bar exists in `src/main.ts` (left hamburger menu toggle, centered title, right icon-only system/light/dark switcher).
 - Asset pipeline specification exists at [skills/airship-one-asset-pipeline/SKILL.md](./skills/airship-one-asset-pipeline/SKILL.md) and defines module packaging, invisible gameplay volumes, and build-time texel-consistent 1024x1024 atlas mapping.
-- Parameter-driven module shell generator exists at `scripts/generate-module-shell.mjs` and writes generated module metadata to `src/content/modules/*.module.json`.
+- Parameter-driven module shell generator exists at `scripts/generate-module-shell.mjs` and writes generated module metadata to `src/content/modules/*.module.json`, including exact module interior profiles (currently `captains-cabin`).
+- `captains_cabin_mk1` is generated via profile and includes authored furnishings (bed, locker, bookshelf with leather-bound books, desk, chair, A4 desk paper) as geometry plus blocked gameplay volumes.
 - Runtime preview in `src/main.ts` now renders generated module block shells (including corridor window strips) using tile PNG textures from `assets/textures/tiles`.
 - Runtime module-join controls now use in-world `+/-` affordances with proximity gating and a center reticle hint; insert/remove rebuilds module chain and revalidates player position to nearest occupiable volume.
 - GitHub Actions Pages workflow scaffold exists (`.github/workflows/build-and-deploy.yml`) using the IdleGames-proven build/upload/deploy pattern.

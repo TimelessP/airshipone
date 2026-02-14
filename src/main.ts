@@ -23,7 +23,8 @@ type MenuName =
   | 'controlsMenu'
   | 'advancedMenu'
   | 'aboutMenu'
-  | 'insertModuleMenu';
+  | 'insertModuleMenu'
+  | 'captainsLetterMenu';
 type MenuBehavior = 'submenu' | 'back' | 'close' | 'keep-open' | 'action';
 type ControlAction = 'left' | 'right' | 'up' | 'down' | 'confirm' | 'back' | 'pause';
 
@@ -78,6 +79,17 @@ interface SimulationState {
   heading: number;
   altitude: number;
   fuel: number;
+  playerPositionX: number;
+  playerPositionY: number;
+  playerPositionZ: number;
+  playerYaw: number;
+  playerPitch: number;
+  playerLatitudeDeg: number;
+  playerLongitudeDeg: number;
+  planetRotationDeg: number;
+  planetOrbitalAngleDeg: number;
+  planetDistanceAu: number;
+  planetAxialTiltDeg: number;
   updatedAt: number;
   moduleIds: string[];
 }
@@ -158,11 +170,20 @@ interface ImageLinkMenuItem {
   alt: string;
 }
 
+interface LetterMenuItem {
+  type: 'letter';
+  from: string;
+  to: string;
+  subject: string;
+  dateUtc: string;
+  paragraphs: string[];
+}
+
 interface DividerMenuItem {
   type: 'divider';
 }
 
-type MenuItem = ActionMenuItem | SettingMenuItem | ControlMenuItem | TextMenuItem | ImageLinkMenuItem | DividerMenuItem;
+type MenuItem = ActionMenuItem | SettingMenuItem | ControlMenuItem | TextMenuItem | ImageLinkMenuItem | LetterMenuItem | DividerMenuItem;
 
 interface ControlsListeningState {
   action: ControlAction;
@@ -295,6 +316,17 @@ const defaultSimulation = (): SimulationState => ({
   heading: 0,
   altitude: 2200,
   fuel: 100,
+  playerPositionX: 0,
+  playerPositionY: 1.68,
+  playerPositionZ: 0,
+  playerYaw: 0,
+  playerPitch: 0,
+  playerLatitudeDeg: 51.4779,
+  playerLongitudeDeg: 0,
+  planetRotationDeg: 0,
+  planetOrbitalAngleDeg: 0,
+  planetDistanceAu: 1,
+  planetAxialTiltDeg: 23.44,
   updatedAt: Date.now(),
   moduleIds: ['cockpit_mk1', 'captains_cabin_mk1', 'radio_room_mk1', 'cargo_mk1']
 });
@@ -395,7 +427,12 @@ const getSaveEnvelope = (): SaveEnvelope => ({
     }
   },
   simulation: {
-    ...simulation
+    ...simulation,
+    playerPositionX: playerPosition.x,
+    playerPositionY: playerPosition.y,
+    playerPositionZ: playerPosition.z,
+    playerYaw,
+    playerPitch
   }
 });
 
@@ -493,10 +530,124 @@ const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
 camera.position.set(0, 2.9, 8.4);
 camera.lookAt(0, 1.2, 0);
 
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(3, 2, 4);
-scene.add(light);
-scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+sunLight.position.set(3, 2, 4);
+const sunTarget = new THREE.Object3D();
+sunTarget.position.set(0, 0, 0);
+sunLight.target = sunTarget;
+scene.add(sunLight);
+scene.add(sunTarget);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+scene.add(ambientLight);
+
+const DEG_TO_RAD = Math.PI / 180;
+const RAD_TO_DEG = 180 / Math.PI;
+
+const clampNumber = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
+const normalizeLongitudeDeg = (longitudeDeg: number): number => ((longitudeDeg + 180) % 360 + 360) % 360 - 180;
+
+const getUtcDayOfYear = (date: Date): number => {
+  const year = date.getUTCFullYear();
+  const startOfYearUtc = Date.UTC(year, 0, 1);
+  const startOfTodayUtc = Date.UTC(year, date.getUTCMonth(), date.getUTCDate());
+  return Math.floor((startOfTodayUtc - startOfYearUtc) / 86400000) + 1;
+};
+
+const calculateSubsolarPoint = (dateUtc: Date): { latitudeDeg: number, longitudeDeg: number } => {
+  const utcHours =
+    dateUtc.getUTCHours() +
+    dateUtc.getUTCMinutes() / 60 +
+    dateUtc.getUTCSeconds() / 3600 +
+    dateUtc.getUTCMilliseconds() / 3600000;
+  const subsolarLongitudeDeg = normalizeLongitudeDeg(-15 * (utcHours - 12) + simulation.planetRotationDeg);
+
+  const dayOfYear = getUtcDayOfYear(dateUtc);
+  const seasonalAngleRad =
+    ((dayOfYear - 172) * (2 * Math.PI / 365.25)) +
+    simulation.planetOrbitalAngleDeg * DEG_TO_RAD;
+  const subsolarLatitudeDeg = simulation.planetAxialTiltDeg * Math.cos(seasonalAngleRad);
+
+  return {
+    latitudeDeg: subsolarLatitudeDeg,
+    longitudeDeg: subsolarLongitudeDeg
+  };
+};
+
+const calculateSunElevationAzimuth = (
+  observerLatitudeDeg: number,
+  observerLongitudeDeg: number,
+  subsolarLatitudeDeg: number,
+  subsolarLongitudeDeg: number
+): { elevationDeg: number, azimuthDeg: number } => {
+  const obsLatRad = observerLatitudeDeg * DEG_TO_RAD;
+  const obsLonRad = observerLongitudeDeg * DEG_TO_RAD;
+  const sunLatRad = subsolarLatitudeDeg * DEG_TO_RAD;
+  const sunLonRad = subsolarLongitudeDeg * DEG_TO_RAD;
+
+  const deltaLonRad = sunLonRad - obsLonRad;
+
+  const sinElevation =
+    Math.sin(obsLatRad) * Math.sin(sunLatRad) +
+    Math.cos(obsLatRad) * Math.cos(sunLatRad) * Math.cos(deltaLonRad);
+  const elevationDeg = Math.asin(clampNumber(sinElevation, -1, 1)) * RAD_TO_DEG;
+
+  const elevationRad = elevationDeg * DEG_TO_RAD;
+  const cosElevation = Math.cos(elevationRad);
+  if (Math.abs(cosElevation) < 1e-9) {
+    return {
+      elevationDeg,
+      azimuthDeg: subsolarLatitudeDeg > observerLatitudeDeg ? 180 : 0
+    };
+  }
+
+  const sinAzimuth = Math.sin(deltaLonRad) * Math.cos(sunLatRad) / cosElevation;
+  const cosAzimuth =
+    (Math.sin(sunLatRad) - Math.sin(obsLatRad) * Math.sin(elevationRad)) /
+    (Math.cos(obsLatRad) * cosElevation);
+
+  const azimuthDeg = (Math.atan2(sinAzimuth, cosAzimuth) * RAD_TO_DEG + 360) % 360;
+  return { elevationDeg, azimuthDeg };
+};
+
+const updateGlobalLightingFromUtc = (utcMs: number) => {
+  const utcNow = new Date(utcMs);
+  const observerLatitudeDeg = clampNumber(simulation.playerLatitudeDeg, -90, 90);
+  const observerLongitudeDeg = normalizeLongitudeDeg(simulation.playerLongitudeDeg);
+  const { latitudeDeg: subsolarLat, longitudeDeg: subsolarLon } = calculateSubsolarPoint(utcNow);
+  const { elevationDeg, azimuthDeg } = calculateSunElevationAzimuth(
+    observerLatitudeDeg,
+    observerLongitudeDeg,
+    subsolarLat,
+    subsolarLon
+  );
+
+  const elevationRad = elevationDeg * DEG_TO_RAD;
+  const azimuthRad = azimuthDeg * DEG_TO_RAD;
+
+  const sunDirection = new THREE.Vector3(
+    Math.sin(azimuthRad) * Math.cos(elevationRad),
+    Math.sin(elevationRad),
+    -Math.cos(azimuthRad) * Math.cos(elevationRad)
+  ).normalize();
+
+  const distanceScale = 12;
+  sunLight.position.copy(sunDirection).multiplyScalar(distanceScale);
+  sunTarget.position.set(0, 0, 0);
+
+  const distanceFactor = 1 / Math.max(0.25, simulation.planetDistanceAu) ** 2;
+  const dayFactor = clampNumber((elevationDeg + 8) / 68, 0, 1);
+  sunLight.intensity = distanceFactor * (0.02 + dayFactor * 1.15);
+  ambientLight.intensity = distanceFactor * (0.06 + dayFactor * 0.32);
+
+  const warmFactor = clampNumber((18 - elevationDeg) / 30, 0, 1);
+  sunLight.color.setRGB(1, 1 - warmFactor * 0.18, 1 - warmFactor * 0.38);
+  ambientLight.color.setRGB(
+    0.72 + dayFactor * 0.28,
+    0.75 + dayFactor * 0.25,
+    0.84 + dayFactor * 0.16
+  );
+};
 
 const tileImages = import.meta.glob('../assets/textures/tiles/*.png', {
   eager: true,
@@ -556,7 +707,30 @@ const getVector3 = (values: number[], label: string): [number, number, number] =
 };
 
 const getMaterial = (block: ModuleBlock): THREE.MeshStandardMaterial => {
-  const key = `${block.material.tileId}|${block.role}`;
+  let repeatX = 1;
+  let repeatY = 1;
+  let repeatKey = 'base';
+  if (block.material.uvMode === 'repeat' && block.primitive === 'box') {
+    const [sizeX, sizeY, sizeZ] = getVector3(block.size, `block size (${block.id})`);
+    // Pick repeat pair for the dominant visible face (the one
+    // perpendicular to the thinnest axis) so texels stay square.
+    //  Thin in X (side walls, window strips):  ±X face → repeat(sizeZ, sizeY)
+    //  Thin in Z (bulkheads, front walls):     ±Z face → repeat(sizeX, sizeY)
+    //  Thin in Y (floors, desk tops):          ±Y face → repeat(sizeX, sizeZ)
+    if (sizeX <= sizeY && sizeX <= sizeZ) {
+      repeatX = Math.max(0.01, sizeZ);
+      repeatY = Math.max(0.01, sizeY);
+    } else if (sizeZ <= sizeX && sizeZ <= sizeY) {
+      repeatX = Math.max(0.01, sizeX);
+      repeatY = Math.max(0.01, sizeY);
+    } else {
+      repeatX = Math.max(0.01, sizeX);
+      repeatY = Math.max(0.01, sizeZ);
+    }
+    repeatKey = `${repeatX.toFixed(3)}x${repeatY.toFixed(3)}`;
+  }
+
+  const key = `${block.material.tileId}|${block.role}|${repeatKey}`;
   const cached = materialCache.get(key);
   if (cached) {
     return cached;
@@ -568,8 +742,8 @@ const getMaterial = (block: ModuleBlock): THREE.MeshStandardMaterial => {
   const params: THREE.MeshStandardMaterialParameters = {
     color: roleColor(block.role),
     alphaTest: isWindow ? 0.08 : 0,
-    metalness: isWindow ? 0.15 : 0.05,
-    roughness: isWindow ? 0.25 : 0.85,
+    metalness: 0,
+    roughness: 1,
     transparent: isWindow,
     opacity: 1,
     depthWrite: !isWindow,
@@ -577,9 +751,17 @@ const getMaterial = (block: ModuleBlock): THREE.MeshStandardMaterial => {
   };
 
   if (texture) {
-    params.map = texture;
+    const texturedMap = repeatKey === 'base'
+      ? texture
+      : (() => {
+        const cloned = texture.clone();
+        cloned.repeat.set(repeatX, repeatY);
+        return cloned;
+      })();
+
+    params.map = texturedMap;
     if (isWindow) {
-      params.alphaMap = texture;
+      params.alphaMap = texturedMap;
     }
   }
 
@@ -588,13 +770,6 @@ const getMaterial = (block: ModuleBlock): THREE.MeshStandardMaterial => {
   }
 
   const material = new THREE.MeshStandardMaterial(params);
-
-  if (texture && block.material.uvMode === 'repeat' && block.primitive === 'box') {
-    const [sizeX, , sizeZ] = getVector3(block.size, `block size (${block.id})`);
-    const repeatX = Math.max(1, sizeX);
-    const repeatY = Math.max(1, sizeZ);
-    texture.repeat.set(repeatX, repeatY);
-  }
 
   materialCache.set(key, material);
   return material;
@@ -615,11 +790,14 @@ const createModuleMesh = (moduleDoc: GeneratedModule): THREE.Group => {
     const material = getMaterial(block);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = `${moduleDoc.id}:${block.id}`;
+    if (block.role === 'furniture-paper-a4') {
+      mesh.userData.interactionKind = 'captains-letter-paper';
+    }
     mesh.position.set(centerX, centerY, centerZ);
     group.add(mesh);
 
     if (block.role === 'ceiling-light') {
-      const light = new THREE.PointLight(0xfff5c2, 0.62, 3.8, 2);
+      const light = new THREE.PointLight(0xfff5c2, 1.35, 5.2, 1.1);
       light.position.set(centerX, centerY - 0.06, centerZ);
       light.castShadow = false;
       group.add(light);
@@ -745,8 +923,12 @@ let interiorMinZ = -2;
 let interiorMaxZ = 2;
 const joinControlVisibleDistanceM = 2.1;
 const joinControlWorldPos = new THREE.Vector3();
+const paperInteractWorldPos = new THREE.Vector3();
 const nearestVolumePoint = new THREE.Vector3();
 let nearClickableJoinControl = false;
+let nearClickablePaper = false;
+const paperInteractDistanceM = 1.7;
+let readablePaperTargets: THREE.Object3D[] = [];
 
 const rebuildModuleAssembly = () => {
   moduleAssembly.clear();
@@ -755,6 +937,7 @@ const rebuildModuleAssembly = () => {
   worldBlockedVolumes = [];
   worldDoorwayVolumes = [];
   joinControlTargets = [];
+  readablePaperTargets = [];
   joinControlByObjectId.clear();
 
   totalLength = moduleChain.reduce((sum, moduleDoc) => sum + moduleDoc.size.lengthM, 0);
@@ -786,6 +969,12 @@ const rebuildModuleAssembly = () => {
     });
 
     moduleAssembly.add(moduleGroup);
+
+    moduleGroup.traverse((child) => {
+      if (child.userData.interactionKind === 'captains-letter-paper') {
+        readablePaperTargets.push(child);
+      }
+    });
   }
 
   const interiorHalfWidth = Math.max(...modulePlacements.map((placement) => placement.widthM)) / 2;
@@ -926,6 +1115,7 @@ const findNearestOccupiablePoint = (from: THREE.Vector3): THREE.Vector3 | null =
 
 const updateJoinControlVisibility = () => {
   nearClickableJoinControl = false;
+  nearClickablePaper = false;
   const controlsActive = !menuVisible && !controlsListeningFor;
 
   for (const target of joinControlTargets) {
@@ -938,7 +1128,17 @@ const updateJoinControlVisibility = () => {
     }
   }
 
-  clickReticle.dataset.visible = nearClickableJoinControl && controlsActive ? 'true' : 'false';
+  if (controlsActive) {
+    for (const paperTarget of readablePaperTargets) {
+      paperTarget.getWorldPosition(paperInteractWorldPos);
+      if (paperInteractWorldPos.distanceTo(playerPosition) <= paperInteractDistanceM) {
+        nearClickablePaper = true;
+        break;
+      }
+    }
+  }
+
+  clickReticle.dataset.visible = (nearClickableJoinControl || nearClickablePaper) && controlsActive ? 'true' : 'false';
 };
 
 const syncPlayerCamera = () => {
@@ -950,6 +1150,28 @@ const syncPlayerCamera = () => {
   camera.position.copy(playerPosition);
   playerLookTarget.copy(playerPosition).add(playerLook);
   camera.lookAt(playerLookTarget);
+};
+
+const playerPitchMin = -1.45;
+const playerPitchMax = 1.45;
+
+const applyPlayerPoseFromSimulation = () => {
+  if (Number.isFinite(simulation.playerPositionX)) {
+    playerPosition.x = simulation.playerPositionX;
+  }
+  if (Number.isFinite(simulation.playerPositionY)) {
+    playerPosition.y = simulation.playerPositionY;
+  }
+  if (Number.isFinite(simulation.playerPositionZ)) {
+    playerPosition.z = simulation.playerPositionZ;
+  }
+  if (Number.isFinite(simulation.playerYaw)) {
+    playerYaw = simulation.playerYaw;
+  }
+  if (Number.isFinite(simulation.playerPitch)) {
+    playerPitch = clamp(simulation.playerPitch, playerPitchMin, playerPitchMax);
+  }
+  syncPlayerCamera();
 };
 
 syncPlayerCamera();
@@ -1363,9 +1585,11 @@ const applyImportedSave = (raw: string) => {
     ...defaultSimulation(),
     ...incoming.simulation
   };
+  applyPlayerPoseFromSimulation();
   moduleChain = buildModuleChainFromIds(simulation.moduleIds);
   syncSimulationModuleIds();
   rebuildModuleAssembly();
+  applyPlayerPoseFromSimulation();
 
   currentTheme = settings.themeMode;
   setTheme(currentTheme);
@@ -1397,8 +1621,10 @@ importInput.addEventListener('change', () => {
 
 const startNewGame = () => {
   simulation = defaultSimulation();
+  applyPlayerPoseFromSimulation();
   moduleChain = buildModuleChainFromIds(simulation.moduleIds);
   rebuildModuleAssembly();
+  applyPlayerPoseFromSimulation();
   simulation.running = true;
   simulation.updatedAt = Date.now();
   syncSimulationModuleIds();
@@ -1416,8 +1642,10 @@ const resumeGame = () => {
     return;
   }
   loadLocalState();
+  applyPlayerPoseFromSimulation();
   moduleChain = buildModuleChainFromIds(simulation.moduleIds);
   rebuildModuleAssembly();
+  applyPlayerPoseFromSimulation();
   syncSimulationModuleIds();
   currentTheme = settings.themeMode;
   setTheme(currentTheme);
@@ -1527,7 +1755,7 @@ const buildInsertModuleItems = (): MenuItem[] => {
 const joinControlRaycaster = new THREE.Raycaster();
 const joinControlNdc = new THREE.Vector2();
 
-const pickJoinControl = (event: MouseEvent): JoinControlTarget | null => {
+const setInteractionRayFromEvent = (event: MouseEvent) => {
   const isPointerLocked = document.pointerLockElement === renderer.domElement;
   if (isPointerLocked) {
     joinControlNdc.set(0, 0);
@@ -1539,6 +1767,10 @@ const pickJoinControl = (event: MouseEvent): JoinControlTarget | null => {
   }
 
   joinControlRaycaster.setFromCamera(joinControlNdc, camera);
+};
+
+const pickJoinControl = (event: MouseEvent): JoinControlTarget | null => {
+  setInteractionRayFromEvent(event);
   const visibleControls = joinControlTargets
     .filter((target) => target.object.visible)
     .map((target) => target.object);
@@ -1555,6 +1787,21 @@ const pickJoinControl = (event: MouseEvent): JoinControlTarget | null => {
   }
 
   return null;
+};
+
+const pickReadablePaper = (event: MouseEvent): THREE.Object3D | null => {
+  setInteractionRayFromEvent(event);
+  const nearbyPapers = readablePaperTargets.filter((paperTarget) => {
+    paperTarget.getWorldPosition(paperInteractWorldPos);
+    return paperInteractWorldPos.distanceTo(playerPosition) <= paperInteractDistanceM;
+  });
+
+  if (nearbyPapers.length === 0) {
+    return null;
+  }
+
+  const hits = joinControlRaycaster.intersectObjects(nearbyPapers, false);
+  return hits[0]?.object ?? null;
 };
 
 renderer.domElement.addEventListener('click', (event) => {
@@ -1577,6 +1824,13 @@ renderer.domElement.addEventListener('click', (event) => {
     return;
   }
 
+  const paperTarget = pickReadablePaper(event);
+  if (paperTarget && paperTarget.userData.interactionKind === 'captains-letter-paper') {
+    openMenu('captainsLetterMenu');
+    showToast('Reading letter');
+    return;
+  }
+
   if (document.pointerLockElement !== renderer.domElement) {
     void renderer.domElement.requestPointerLock();
   }
@@ -1590,7 +1844,7 @@ window.addEventListener('mousemove', (event) => {
   playerYaw -= event.movementX * mouseLookSensitivity;
   const pitchDirection = settings.controls.invertMouseY ? 1 : -1;
   playerPitch += event.movementY * mouseLookSensitivity * pitchDirection;
-  playerPitch = Math.max(-1.45, Math.min(1.45, playerPitch));
+  playerPitch = clamp(playerPitch, playerPitchMin, playerPitchMax);
   syncPlayerCamera();
 });
 
@@ -1731,6 +1985,44 @@ const renderImageLinkItem = (item: ImageLinkMenuItem) => {
   return row;
 };
 
+const renderLetterItem = (item: LetterMenuItem) => {
+  const letter = document.createElement('article');
+  letter.className = 'menu-letter';
+
+  const header = document.createElement('header');
+  header.className = 'menu-letter-header';
+
+  const from = document.createElement('div');
+  from.className = 'menu-letter-meta ui-value';
+  from.textContent = `From: ${item.from}`;
+
+  const to = document.createElement('div');
+  to.className = 'menu-letter-meta ui-value';
+  to.textContent = `To: ${item.to}`;
+
+  const subject = document.createElement('div');
+  subject.className = 'menu-letter-meta ui-value';
+  subject.textContent = `Subject: ${item.subject}`;
+
+  const dateUtc = document.createElement('div');
+  dateUtc.className = 'menu-letter-meta ui-value';
+  dateUtc.textContent = item.dateUtc;
+
+  header.append(from, to, subject, dateUtc);
+
+  const body = document.createElement('div');
+  body.className = 'menu-letter-body';
+  item.paragraphs.forEach((paragraphText) => {
+    const paragraph = document.createElement('p');
+    paragraph.className = 'menu-letter-paragraph';
+    paragraph.textContent = paragraphText;
+    body.appendChild(paragraph);
+  });
+
+  letter.append(header, body);
+  return letter;
+};
+
 const renderCurrentMenu = () => {
   menuPanel.dataset.visible = menuVisible ? 'true' : 'false';
   menuToggleButton.setAttribute('aria-expanded', menuVisible ? 'true' : 'false');
@@ -1791,6 +2083,11 @@ const renderCurrentMenu = () => {
 
     if (item.type === 'text') {
       menuItems.appendChild(renderTextItem(item));
+      return;
+    }
+
+    if (item.type === 'letter') {
+      menuItems.appendChild(renderLetterItem(item));
       return;
     }
 
@@ -2156,6 +2453,21 @@ const buildAboutItems = (): MenuItem[] => [
   }
 ];
 
+const buildCaptainsLetterItems = (): MenuItem[] => [
+  {
+    type: 'letter',
+    from: 'Chief Engineer Mirelle Kade',
+    to: 'Captain',
+    subject: 'Stormline routing and trim guidance',
+    dateUtc: new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC',
+    paragraphs: [
+      'Stormline reports are true. Crosswind shears are rising along the northern route.',
+      'I tightened the aft stabilizer rigging, but avoid hard turns after dusk until we re-balance ballast.',
+      'If we must press on, keep her nose five degrees high and trim slow. She will answer kindly.'
+    ]
+  }
+];
+
 const MENUS: Record<MenuName, MenuDefinition> = {
   mainMenu: {
     isRoot: true,
@@ -2250,6 +2562,18 @@ const MENUS: Record<MenuName, MenuDefinition> = {
       {
         label: 'Back',
         behavior: 'back'
+      }
+    ]
+  },
+  captainsLetterMenu: {
+    isRoot: true,
+    title: "Captain's Letter",
+    overview: 'A folded note left on your desk.',
+    itemBuilder: buildCaptainsLetterItems,
+    actions: [
+      {
+        label: 'Close',
+        behavior: 'close'
       }
     ]
   }
@@ -2397,6 +2721,7 @@ const loop = (now: number) => {
   updateJoinControlVisibility();
 
   syncPlayerCamera();
+  updateGlobalLightingFromUtc(Date.now());
 
   if (settings.graphics.quality === 'low') {
     renderer.setPixelRatio(1);
@@ -2419,8 +2744,10 @@ const loop = (now: number) => {
 
 const bootstrap = async () => {
   loadLocalState();
+  applyPlayerPoseFromSimulation();
   moduleChain = buildModuleChainFromIds(simulation.moduleIds);
   rebuildModuleAssembly();
+  applyPlayerPoseFromSimulation();
   syncSimulationModuleIds();
   currentTheme = settings.themeMode;
   setTheme(currentTheme);

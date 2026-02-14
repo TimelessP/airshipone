@@ -25,6 +25,7 @@ Keep contributors aligned on:
 - Menu model: data-driven stack-based DOM overlay menus with submenu/back/close behaviors.
 - Save model (current scaffold): browser `localStorage` envelope including settings + local simulation, with JSON export/import roundtrip.
 - Controls model (current scaffold): dual bindings (keyboard + gamepad button/axis) with HID-safe rebind capture baseline.
+- Module generation model: parameterized generator profiles for generic module types and exact module variants (`--interior-profile auto|none|captains-cabin`).
 - Generated version artifacts:
   - `public/version.js` (local/dev fallback and build-time overwrite),
   - `dist/version.js` (must match deployed build version).

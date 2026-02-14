@@ -271,7 +271,7 @@ When requesting a new tile set, Copilot should provide:
 
 Use the generator script to produce consistent starter shells from sizing parameters:
 
-- Command: `npm run generate:module -- --id <module_id> --module-type <room|open|cockpit|cargo>`
+- Command: `npm run generate:module -- --id <module_id> --module-type <room|open|cockpit|cargo> [--interior-profile <auto|none|captains-cabin>]`
 - Script: `scripts/generate-module-shell.mjs`
 - Output: `src/content/modules/<module_id>.module.json`
 
@@ -283,6 +283,10 @@ Use the generator script to produce consistent starter shells from sizing parame
   - `open`: no inner walls
   - `cockpit`: fixed-module open shell profile (no inner walls)
   - `cargo`: fixed-module open shell profile (no inner walls)
+- `--interior-profile`
+  - `auto`: infer known exact profile from module id
+  - `none`: no extra interior furniture blocks
+  - `captains-cabin`: apply captain cabin furnishing layout
 - `--length-u` module length in U units (`1U = 3.2m`)
 - `--room-width-m`, `--room-length-m`
 - `--corridor-width-m`, `--corridor-door-width-m`
@@ -321,6 +325,25 @@ Use the generator script to produce consistent starter shells from sizing parame
 - Fixed-module examples:
   - `src/content/modules/cockpit_mk1.module.json`
   - `src/content/modules/cargo_mk1.module.json`
+
+### Generator-First Exact Module Rule (Required)
+
+- Exact module variants must be authored as generator profiles, not hand-edited JSON.
+- Generic module types (`room`, `open`, `cockpit`, `cargo`) remain parameterized bases.
+- Exact module IDs (for example `captains_cabin_mk1`) select a profile via `--interior-profile` or `auto` inference.
+- Regenerating a module JSON must be deterministic from script + parameters.
+
+### Captains Cabin Profile (Current)
+
+`captains-cabin` profile adds room furnishings as generated blocks with matching collision blockers:
+
+- bed
+- locker
+- bookshelf unit
+- leather-bound books in shelf rows
+- desk
+- chair
+- A4 sheet of paper on desk
 
 ### Window Construction Rule (Required)
 

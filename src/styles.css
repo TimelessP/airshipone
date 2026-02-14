@@ -316,6 +316,48 @@ canvas {
   border-radius: calc(var(--u) * 2);
 }
 
+.menu-letter {
+  display: grid;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  border: calc(var(--u) * 1) solid var(--panel-border);
+  background: color-mix(in srgb, var(--paper) 76%, transparent);
+  color: color-mix(in srgb, var(--wood) 70%, black 30%);
+}
+
+:root[data-theme='light'] .menu-letter {
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  color: color-mix(in srgb, var(--wood) 74%, black 26%);
+}
+
+.menu-letter .ui-value {
+  color: inherit;
+}
+
+.menu-letter-header {
+  display: grid;
+  gap: calc(var(--u) * 1);
+  padding-bottom: calc(var(--u) * 1);
+  border-bottom: calc(var(--u) * 1) solid color-mix(in srgb, var(--panel-border) 70%, transparent);
+}
+
+.menu-letter-meta {
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 700;
+}
+
+.menu-letter-body {
+  display: grid;
+  gap: calc(var(--u) * 1);
+}
+
+.menu-letter-paragraph {
+  margin: 0;
+  font-family: var(--font-mono);
+  line-height: calc(var(--row) * 0.95);
+}
+
 .menu-toast {
   position: absolute;
   left: 50%;

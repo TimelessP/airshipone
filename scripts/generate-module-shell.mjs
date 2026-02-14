@@ -11,6 +11,7 @@ const DEFAULTS = {
   id: 'captains_cabin_mk1',
   category: 'interior-module',
   moduleType: 'room',
+  interiorProfile: 'auto',
   lengthU: 1,
   unitLengthM: 3.2,
   heightM: 2.6,
@@ -27,6 +28,7 @@ const DEFAULTS = {
 };
 
 const MODULE_TYPES = new Set(['room', 'open', 'cockpit', 'cargo']);
+const INTERIOR_PROFILES = new Set(['auto', 'none', 'captains-cabin']);
 
 const round = (value) => Math.round(value * 1000) / 1000;
 
@@ -59,6 +61,9 @@ const parseArgs = (argv) => {
         break;
       case 'length-u':
         parsed.lengthU = asNumber(next, parsed.lengthU);
+        break;
+      case 'interior-profile':
+        parsed.interiorProfile = next;
         break;
       case 'unit-length-m':
         parsed.unitLengthM = asNumber(next, parsed.unitLengthM);
@@ -101,6 +106,14 @@ const parseArgs = (argv) => {
 const applyModuleTypeProfile = (params) => {
   if (!MODULE_TYPES.has(params.moduleType)) {
     throw new Error(`Unsupported module type: ${params.moduleType}. Use one of: room, open, cockpit, cargo`);
+  }
+
+  if (!INTERIOR_PROFILES.has(params.interiorProfile)) {
+    throw new Error(`Unsupported interior profile: ${params.interiorProfile}. Use one of: auto, none, captains-cabin`);
+  }
+
+  if (params.interiorProfile === 'captains-cabin' && params.moduleType !== 'room') {
+    throw new Error('Interior profile captains-cabin requires --module-type room');
   }
 
   if (params.moduleType === 'cockpit') {
@@ -149,6 +162,14 @@ const findTile = (tileIds, preferred, fallback) => {
   return first;
 };
 
+const requireTile = (tileIds, expected) => {
+  const found = tileIds.find((tileId) => tileId === expected);
+  if (!found) {
+    throw new Error(`Required tile not found: ${expected}.png in assets/textures/tiles`);
+  }
+  return found;
+};
+
 const loadTileAssignments = async () => {
   const entries = await fs.readdir(TILE_DIR, { withFileTypes: true });
   const tileIds = entries
@@ -165,8 +186,202 @@ const loadTileAssignments = async () => {
     innerWall: findTile(tileIds, ['paper', 'oak', 'walnut'], 'brass'),
     ceiling: findTile(tileIds, ['paper-bright', 'paper', 'oak'], 'walnut'),
     window: findTile(tileIds, ['glass-pane'], 'paper'),
-    trim: findTile(tileIds, ['brass', 'oak', 'walnut'], 'paper')
+    trim: findTile(tileIds, ['brass', 'oak', 'walnut'], 'paper'),
+    wood: findTile(tileIds, ['oak', 'walnut'], 'paper'),
+    leather: requireTile(tileIds, 'leather-brown-256x256px'),
+    paper: findTile(tileIds, ['paper-bright', 'paper'], 'paper')
   };
+};
+
+const resolveInteriorProfile = (params) => {
+  if (params.interiorProfile !== 'auto') {
+    return params.interiorProfile;
+  }
+
+  if (params.id === 'captains_cabin_mk1') {
+    return 'captains-cabin';
+  }
+
+  return 'none';
+};
+
+const addCaptainsCabinFurnishings = ({ blocks, blocked, params, tiles, roomMinX, roomMaxX, moduleLengthM }) => {
+  const roomFrontZ = -((moduleLengthM / 2) - params.wallOuterM);
+  const roomRearZ = (moduleLengthM / 2) - params.wallOuterM;
+  const floorTopY = params.floorThicknessM;
+
+  const addFurniture = ({ id, role, center, size, tileId, addBlocked = true }) => {
+    blocks.push(makeBox(id, role, center, size, tileId));
+    if (addBlocked) {
+      blocked.push(makeVolumeBox(`blocked_${id}`, 'blocked', center, size));
+    }
+  };
+
+  addFurniture({
+    id: 'furn_bed_frame',
+    role: 'furniture-bed-frame',
+    center: [0, floorTopY + 0.2, roomRearZ - 0.51],
+    size: [2.02, 0.4, 1.02],
+    tileId: tiles.wood
+  });
+
+  addFurniture({
+    id: 'furn_bed_mattress',
+    role: 'furniture-bed-mattress',
+    center: [0, floorTopY + 0.49, roomRearZ - 0.51],
+    size: [1.94, 0.18, 0.96],
+    tileId: tiles.paper
+  });
+
+  const deskWidth = 1.1;
+  const sideWallGap = 0.06;
+  const deskHalfWidth = deskWidth / 2;
+  const unitToDeskGap = sideWallGap;
+  const unitOuterRightX = roomMaxX - sideWallGap;
+  const unitInnerRightX = deskHalfWidth + unitToDeskGap;
+  const unitWidthX = unitOuterRightX - unitInnerRightX;
+  const unitCenterRightX = (unitOuterRightX + unitInnerRightX) / 2;
+  const unitOuterLeftX = roomMinX + sideWallGap;
+  const unitInnerLeftX = -(deskHalfWidth + unitToDeskGap);
+  const unitCenterLeftX = (unitOuterLeftX + unitInnerLeftX) / 2;
+  const frontFurnitureZ = roomFrontZ + 0.26;
+
+  addFurniture({
+    id: 'furn_locker',
+    role: 'furniture-locker',
+    center: [unitCenterRightX, floorTopY + 0.95, frontFurnitureZ],
+    size: [unitWidthX, 1.9, 0.5],
+    tileId: tiles.wood
+  });
+
+  const shelfUnitCenterX = unitCenterLeftX;
+  const shelfUnitCenterY = floorTopY + 0.95;
+  const shelfUnitCenterZ = frontFurnitureZ;
+  const shelfUnitHeight = 1.9;
+  const shelfUnitDepth = 0.42;
+  const shelfBoardThickness = 0.03;
+  const shelfHalfWidth = unitWidthX / 2;
+  const shelfHalfDepth = shelfUnitDepth / 2;
+  const shelfBottomY = floorTopY;
+  const shelfTopY = floorTopY + shelfUnitHeight;
+  const shelfInnerWidth = Math.max(0.2, unitWidthX - (2 * shelfBoardThickness));
+  const shelfInnerDepth = Math.max(0.12, shelfUnitDepth - shelfBoardThickness);
+
+  addFurniture({
+    id: 'furn_bookshelf_side_left',
+    role: 'furniture-bookshelf-side',
+    center: [shelfUnitCenterX - shelfHalfWidth + (shelfBoardThickness / 2), shelfUnitCenterY, shelfUnitCenterZ],
+    size: [shelfBoardThickness, shelfUnitHeight, shelfUnitDepth],
+    tileId: tiles.wood
+  });
+
+  addFurniture({
+    id: 'furn_bookshelf_side_right',
+    role: 'furniture-bookshelf-side',
+    center: [shelfUnitCenterX + shelfHalfWidth - (shelfBoardThickness / 2), shelfUnitCenterY, shelfUnitCenterZ],
+    size: [shelfBoardThickness, shelfUnitHeight, shelfUnitDepth],
+    tileId: tiles.wood
+  });
+
+  addFurniture({
+    id: 'furn_bookshelf_rear',
+    role: 'furniture-bookshelf-rear',
+    center: [shelfUnitCenterX, shelfUnitCenterY, shelfUnitCenterZ - shelfHalfDepth + (shelfBoardThickness / 2)],
+    size: [shelfInnerWidth, shelfUnitHeight, shelfBoardThickness],
+    tileId: tiles.wood
+  });
+
+  const shelfCount = 5;
+  const shelfCentersY = [];
+  const shelfStartY = shelfBottomY + (shelfBoardThickness / 2);
+  const shelfEndY = shelfTopY - (shelfBoardThickness / 2);
+
+  for (let shelfIndex = 0; shelfIndex < shelfCount; shelfIndex += 1) {
+    const t = shelfCount === 1 ? 0 : shelfIndex / (shelfCount - 1);
+    const shelfY = shelfStartY + ((shelfEndY - shelfStartY) * t);
+    shelfCentersY.push(shelfY);
+    addFurniture({
+      id: `furn_bookshelf_shelf_${shelfIndex + 1}`,
+      role: 'furniture-bookshelf-shelf',
+      center: [shelfUnitCenterX, shelfY, shelfUnitCenterZ + (shelfBoardThickness / 2)],
+      size: [shelfInnerWidth, shelfBoardThickness, shelfInnerDepth],
+      tileId: tiles.wood
+    });
+  }
+
+  let bookIndex = 0;
+  const booksPerRow = 6;
+  const booksUsableWidth = Math.max(0.2, shelfInnerWidth - 0.04);
+  const bookSlotWidth = booksUsableWidth / booksPerRow;
+  const bookWidth = Math.max(0.03, Math.min(0.065, bookSlotWidth * 0.78));
+  const bookDepth = Math.max(0.18, shelfInnerDepth - 0.1);
+
+  for (let rowIndex = 0; rowIndex < shelfCentersY.length - 1; rowIndex += 1) {
+    const lowerShelf = shelfCentersY[rowIndex];
+    const upperShelf = shelfCentersY[rowIndex + 1];
+    const compartmentBottomY = lowerShelf + (shelfBoardThickness / 2);
+    const compartmentTopY = upperShelf - (shelfBoardThickness / 2);
+    const bookHeight = Math.max(0.16, compartmentTopY - compartmentBottomY - 0.02);
+    const bookCenterY = compartmentBottomY + (bookHeight / 2);
+
+    for (let colIndex = 0; colIndex < booksPerRow; colIndex += 1) {
+      bookIndex += 1;
+      const bookCenterX =
+        shelfUnitCenterX - (booksUsableWidth / 2) + (bookSlotWidth * (colIndex + 0.5));
+      addFurniture({
+        id: `furn_books_leather_${bookIndex}`,
+        role: 'furniture-books-leather',
+        center: [bookCenterX, bookCenterY, shelfUnitCenterZ + 0.02],
+        size: [bookWidth, bookHeight, bookDepth],
+        tileId: tiles.leather
+      });
+    }
+  }
+
+  addFurniture({
+    id: 'furn_desk',
+    role: 'furniture-desk',
+    center: [0, floorTopY + 0.38, roomFrontZ + 0.36],
+    size: [deskWidth, 0.76, 0.56],
+    tileId: tiles.wood
+  });
+
+  const chairSeatCenterZ = roomFrontZ + 0.86;
+  const chairSeatWidth = 0.44;
+  const chairSeatHeight = 0.44;
+  const chairSeatDepth = 0.44;
+  const chairBackWidth = chairSeatWidth;
+  const chairBackHeight = 0.44;
+  const chairBackDepth = 0.08;
+
+  addFurniture({
+    id: 'furn_chair_seat',
+    role: 'furniture-chair-seat',
+    center: [0, floorTopY + (chairSeatHeight / 2), chairSeatCenterZ],
+    size: [chairSeatWidth, chairSeatHeight, chairSeatDepth],
+    tileId: tiles.wood
+  });
+
+  addFurniture({
+    id: 'furn_chair_back',
+    role: 'furniture-chair-back',
+    center: [
+      0,
+      floorTopY + chairSeatHeight + (chairBackHeight / 2),
+      chairSeatCenterZ + (chairSeatDepth / 2) - (chairBackDepth / 2)
+    ],
+    size: [chairBackWidth, chairBackHeight, chairBackDepth],
+    tileId: tiles.wood
+  });
+
+  addFurniture({
+    id: 'furn_a4_paper',
+    role: 'furniture-paper-a4',
+    center: [0.18, floorTopY + 0.77, roomFrontZ + 0.33],
+    size: [0.21, 0.01, 0.297],
+    tileId: tiles.paper,
+    addBlocked: false
+  });
 };
 
 const makeBox = (id, role, center, size, tileId) => ({
@@ -207,6 +422,7 @@ const makeVolumeBox = (id, kind, center, size) => ({
 });
 
 const buildGeometryAndVolumes = (params, tiles) => {
+  const interiorProfile = resolveInteriorProfile(params);
   const hasInnerRoomPartitions = params.moduleType === 'room';
   const frontCorridorOpen = params.moduleType !== 'cockpit';
   const rearCorridorOpen = params.moduleType !== 'cargo';
@@ -417,6 +633,18 @@ const buildGeometryAndVolumes = (params, tiles) => {
     makeVolumeBox('headbump_ceiling', 'headBump', [0, params.clearHeightM + ((params.heightM - params.clearHeightM) / 2), 0], [moduleWidthM - (2 * params.wallOuterM), params.heightM - params.clearHeightM, moduleLengthM - (2 * params.wallOuterM)])
   );
 
+  if (interiorProfile === 'captains-cabin') {
+    addCaptainsCabinFurnishings({
+      blocks,
+      blocked,
+      params,
+      tiles,
+      roomMinX,
+      roomMaxX,
+      moduleLengthM
+    });
+  }
+
   return {
     moduleWidthM,
     moduleLengthM,
@@ -516,6 +744,7 @@ const printUsage = () => {
   console.log('Options:');
   console.log('  --id <moduleId>');
   console.log('  --module-type <room|open|cockpit|cargo>');
+  console.log('  --interior-profile <auto|none|captains-cabin>');
   console.log('  --length-u <number>');
   console.log('  --room-width-m <number>');
   console.log('  --room-length-m <number>');
