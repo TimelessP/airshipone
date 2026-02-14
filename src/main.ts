@@ -667,6 +667,34 @@ for (const [filePath, url] of Object.entries(tileImages)) {
 const textureLoader = new THREE.TextureLoader();
 const textureCache = new Map<string, THREE.Texture>();
 const materialCache = new Map<string, THREE.MeshStandardMaterial>();
+let texturesPreloadPromise: Promise<void> | null = null;
+
+const configureTexture = (texture: THREE.Texture) => {
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+};
+
+const preloadTileTextures = (): Promise<void> => {
+  if (texturesPreloadPromise) {
+    return texturesPreloadPromise;
+  }
+
+  texturesPreloadPromise = Promise.all(
+    Array.from(tilePathById.entries()).map(async ([tileId, texturePath]) => {
+      if (textureCache.has(tileId)) {
+        return;
+      }
+
+      const texture = await textureLoader.loadAsync(texturePath);
+      configureTexture(texture);
+      textureCache.set(tileId, texture);
+    })
+  ).then(() => undefined);
+
+  return texturesPreloadPromise;
+};
 
 const getTexture = (tileId: string): THREE.Texture | null => {
   const cached = textureCache.get(tileId);
@@ -680,10 +708,7 @@ const getTexture = (tileId: string): THREE.Texture | null => {
   }
 
   const texture = textureLoader.load(texturePath);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  configureTexture(texture);
   textureCache.set(tileId, texture);
   return texture;
 };
@@ -2744,6 +2769,7 @@ const loop = (now: number) => {
 
 const bootstrap = async () => {
   loadLocalState();
+  await preloadTileTextures();
   applyPlayerPoseFromSimulation();
   moduleChain = buildModuleChainFromIds(simulation.moduleIds);
   rebuildModuleAssembly();
