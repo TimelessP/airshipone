@@ -130,7 +130,7 @@ For each row:
 
 | Status | Legacy contract | New target | Verification |
 |---|---|---|---|
-| [ ] | Save/load existence checks and game resume semantics | `src/save/runtime/*` | Resume flow E2E tests |
+| [~] | Save/load existence checks and game resume semantics | `src/main.ts` (temporary runtime save envelope + resume flow) | Resume flow E2E tests |
 | [ ] | Legacy migration for `library` old format | `src/save/migrations/library-v1.ts` | Migration fixture tests |
 | [ ] | Settings-based update-check timestamps | `src/save/schema/settings.ts` | Settings migration tests |
 

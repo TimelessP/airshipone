@@ -22,6 +22,9 @@ Keep contributors aligned on:
 - Architecture target: modular ECS + typed event queue + multi-rate update domains.
 - Version source of truth: `package.json` `version`.
 - Theme model: runtime light/dark mode with tokenized Victorian wood/paper/velvet palette.
+- Menu model: data-driven stack-based DOM overlay menus with submenu/back/close behaviors.
+- Save model (current scaffold): browser `localStorage` envelope including settings + local simulation, with JSON export/import roundtrip.
+- Controls model (current scaffold): dual bindings (keyboard + gamepad button/axis) with HID-safe rebind capture baseline.
 - Generated version artifacts:
   - `public/version.js` (local/dev fallback and build-time overwrite),
   - `dist/version.js` (must match deployed build version).

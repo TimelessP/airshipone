@@ -10,9 +10,17 @@ These instructions are for AI coding agents working in this repository.
 - Legacy/reference code lives under [reference-implementation](../reference-implementation).
 - Project-specific contributor skill exists at [skills/airship-one-dev/SKILL.md](./skills/airship-one-dev/SKILL.md) and should be consulted before implementing new slices.
 - Project-specific design skill exists at [skills/airship-one-design/SKILL.md](./skills/airship-one-design/SKILL.md) and should be consulted before modifying layout/visual styles.
+- Project-specific modular 3D asset skill exists at [skills/airship-one-asset-pipeline/SKILL.md](./skills/airship-one-asset-pipeline/SKILL.md) and should be consulted before creating or modifying module meshes/volumes/textures.
 - Release/PWA scaffolding exists (`prod-release.sh`, `scripts/write-version.mjs`, `scripts/build-sw.mjs`, `public/manifest.webmanifest`).
 - Convenience shell wrappers exist (`dev-prepare.sh`, `dev-run.sh`, `dev-test.sh`, `dev-build.sh`, `dev-build-bump-ver.sh`) and delegate to npm scripts; `dev-build-bump-ver.sh` bumps version then builds.
 - Initial Vite + TypeScript + Three.js runtime scaffold exists (`index.html`, `src/main.ts`, `src/pwa/register-sw.ts`).
+- Unified stack-based main menu exists in `src/main.ts` with submenus for Settings/About and local save management (`new`, `resume`, `export JSON`, `import JSON`).
+- Settings and local simulation state persist to browser local storage and round-trip via exported/imported JSON save envelopes.
+- Persistent full-width top bar exists in `src/main.ts` (left hamburger menu toggle, centered title, right icon-only system/light/dark switcher).
+- Asset pipeline specification exists at [skills/airship-one-asset-pipeline/SKILL.md](./skills/airship-one-asset-pipeline/SKILL.md) and defines module packaging, invisible gameplay volumes, and build-time texel-consistent 1024x1024 atlas mapping.
+- Parameter-driven module shell generator exists at `scripts/generate-module-shell.mjs` and writes generated module metadata to `src/content/modules/*.module.json`.
+- Runtime preview in `src/main.ts` now renders generated module block shells (including corridor window strips) using tile PNG textures from `assets/textures/tiles`.
+- Runtime module-join controls now use in-world `+/-` affordances with proximity gating and a center reticle hint; insert/remove rebuilds module chain and revalidates player position to nearest occupiable volume.
 - GitHub Actions Pages workflow scaffold exists (`.github/workflows/build-and-deploy.yml`) using the IdleGames-proven build/upload/deploy pattern.
 - Local build/release flow is validated and GitHub Pages is live at `https://timelessp.github.io/airshipone/`; remaining verification is SW update lifecycle, offline installability, and deep-link behavior.
 
@@ -39,10 +47,11 @@ These instructions are for AI coding agents working in this repository.
 1. Read [ROADMAP.md](../ROADMAP.md) and identify the active phase.
 2. Read [skills/airship-one-dev/SKILL.md](./skills/airship-one-dev/SKILL.md) for current workflow/tooling/debug guardrails.
 3. Read [skills/airship-one-design/SKILL.md](./skills/airship-one-design/SKILL.md) before changing page composition or typography.
-4. If parity-related, consult [LEGACY_PARITY_MAP.md](../LEGACY_PARITY_MAP.md).
-5. Check reference behavior in [reference-implementation/timelessp-as0](../reference-implementation/timelessp-as0).
-6. Make the smallest coherent change that advances the current phase.
-7. Update docs/checklists immediately after code changes.
+4. Read [skills/airship-one-asset-pipeline/SKILL.md](./skills/airship-one-asset-pipeline/SKILL.md) before changing 3D module geometry, collision/walk volumes, or texture bindings.
+5. If parity-related, consult [LEGACY_PARITY_MAP.md](../LEGACY_PARITY_MAP.md).
+6. Check reference behavior in [reference-implementation/timelessp-as0](../reference-implementation/timelessp-as0).
+7. Make the smallest coherent change that advances the current phase.
+8. Update docs/checklists immediately after code changes.
 
 ## Development Protocol (When User Says “Implement Next Feature(s)”) 
 
@@ -102,6 +111,8 @@ Treat this as permission to proceed autonomously with the next coherent, scoped 
 - Use event-driven boundaries between systems.
 - Avoid adding dependencies unless they are justified by roadmap scope.
 - Do not introduce backend or server assumptions.
+- Fail fast for runtime/debuggability: do not silently swallow exceptions and do not add silent fallback paths that hide defects.
+- If handling expected user-input errors, surface explicit, actionable errors instead of masking them.
 
 ## Multi-Rate Runtime Rules
 

@@ -15,7 +15,7 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [ ] Three.js world/interior rendering
 - [ ] 320x320 logical world render target (offscreen), scaled to viewport
 - [ ] Hybrid UI: DOM overlays for menus/dialogs, pixel aesthetic preserved
-- [ ] Unified menu system pattern (data-driven, stack-based, keep-open behaviors)
+- [x] Unified menu system pattern (data-driven, stack-based, keep-open behaviors)
 - [ ] Offline-ready PWA (manifest + service worker + deterministic cache versioning)
 - [ ] Deterministic simulation cadence target at 25 FPS with delta-time support
 - [ ] Simulation, render, and terrain-harvest run on separate schedulers (multi-rate)
@@ -29,7 +29,7 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [ ] Language: TypeScript (strict mode)
 - [ ] 3D engine: Three.js
 - [ ] State model: ECS world + system modules + serialized game state
-- [ ] Persistence: `localStorage` save slots + import/export JSON
+- [x] Persistence: `localStorage` save slots + import/export JSON
 - [ ] Packaging: static assets and bundle suitable for GitHub Pages
 - [ ] Development environment baseline: Linux primary; Windows contributors use VS Code Git Bash-compatible shell flow
 
@@ -43,7 +43,7 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [ ] App loop + scene orchestration contracts from `main.py`
   - [ ] 320x320 logical surface and scale/letterbox behavior
   - [ ] Mouse coordinate conversion into logical space
-  - [ ] Scene transition semantics (`new_game`, `resume_game`, scene dict transitions)
+  - [~] Scene transition semantics (`new_game`, `resume_game`, scene dict transitions)
   - [ ] Simulation pause/resume policy by scene type
 - [ ] Scene UX contracts from `scene_*.py`
   - [ ] Main menu enable/disable/focus rules
@@ -295,6 +295,30 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [ ] Implement room/corridor graph and door connectivity
 - [ ] Implement collision boundaries and navigation mesh/grid for player movement
 
+### 4.1.a Modular Interior Asset Pipeline
+- [x] Add formal module/volume/texture pipeline specification (`.github/skills/airship-one-asset-pipeline/SKILL.md`)
+- [ ] Define `module.v1` metadata schema contract in runtime loader
+- [ ] Define module slot graph rules (fixed `cockpit` front, fixed `cargo` rear, dynamic middle modules)
+- [ ] Implement insert/remove module command validation (`+`/`-` wall controls near corridor doorway)
+- [ ] Implement build-time texture atlas generator contract (`1024x1024` pages + manifest)
+- [ ] Enforce texel density target across all interior surfaces
+- [ ] Add asset validation checks (connector compatibility, traversable corridor, invalid volume overlaps)
+
+### 4.1.b Invisible Gameplay Volumes
+- [ ] Standardize volume primitives (`box`, `capsule`, `convex`) for module metadata
+- [ ] Integrate `walkable`/`blocked`/`climb`/`headBump`/`doorway` query pipeline
+- [ ] Add jump head-hit and ladder traversal checks against authored volumes
+- [ ] Add doorway transition triggers from authored `doorway` volumes
+
+### 4.1.c Authoring Workflow (User + Copilot)
+- [x] Add dedicated skill for module authoring process (`.github/skills/airship-one-asset-pipeline/SKILL.md`)
+- [x] Add first module template package under runtime content path (`src/content/modules/captains_cabin_mk1.module.json`)
+- [x] Add parameter-driven module shell generator (`scripts/generate-module-shell.mjs`) with `room/open/cockpit/cargo` profiles
+- [x] Add in-world join controls (`+` insert, `-` remove) with fixed-module removal guards
+- [x] Add proximity-gated join control visibility with center reticle interaction hint
+- [x] Add nearest-walkable player relocation when module-chain changes produce invalid occupancy
+- [ ] Add texture request checklist and acceptance gates to contributor docs
+
 ### 4.2 Player Locomotion
 - [ ] Implement first/third-person interior movement controls
 - [ ] Add interaction targeting for station hotspots
@@ -308,6 +332,8 @@ Create a single-player airship simulator that is technically robust, mathematica
 ### Exit Criteria
 - [ ] Player can traverse entire gondola interior
 - [ ] Every station anchor can be reached and interacted with
+- [ ] Interior module insert/remove operations preserve traversable corridor and deterministic simulation state
+- [ ] All interior module surfaces satisfy texel density contract via build-time atlas mapping
 
 ---
 

@@ -50,6 +50,14 @@ Use this skill whenever implementing or changing UI layout/styling.
 - Avoid external page chrome around the game square.
 - Keep focus outlines and borders tied to `--u`.
 
+## Top Bar Rules (Required)
+
+- Keep a persistent full-width top bar at the top of `.game-square`.
+- Left control is an SVG hamburger button for opening/closing pause/main menu overlays.
+- Center content is the title text: `Airship One`.
+- Right control is an icon-only SVG theme switcher (system/light/dark), no text label in button body.
+- Do not add placeholder/dummy informational panels on the menu screen.
+
 ## Validation Checklist
 
 - `./dev-test.sh` passes.

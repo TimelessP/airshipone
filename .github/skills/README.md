@@ -79,6 +79,21 @@ Design inclusive games that are playable by everyone, including players with dis
 - Difficulty and assistance options
 - Testing for accessibility
 
+### 5. **Airship One Assets** (`airship-one-assets/`)
+Define and validate modular interior 3D assets with explicit invisible gameplay volumes and texel-consistent texture atlas bindings.
+
+**Use when:**
+- Designing new airship interior modules
+- Defining walkable/collision/climb/doorway volumes
+- Planning module insert/remove anchors and connector compatibility
+- Generating texture tile requests for build-time atlas packing
+
+**Key topics:**
+- Module package contracts (`.glb` + `.module.json`)
+- Walk/collision/head-bump/ladder volume semantics
+- Fixed cockpit/cargo plus dynamic middle-module slot graph
+- Build-time 1024x1024 atlas mapping and texel density validation
+
 ## How to Use These Skills
 
 ### In GitHub Copilot Chat
