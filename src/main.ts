@@ -2472,7 +2472,7 @@ const buildAboutItems = (): MenuItem[] => [
   {
     type: 'image-link',
     label: 'Support',
-    src: '/assets/bmac/default-yellow.png',
+    src: `${import.meta.env.BASE_URL}assets/bmac/default-yellow.png`,
     href: 'https://buymeacoffee.com/timelessp',
     alt: 'Buy Me A Coffee'
   }
