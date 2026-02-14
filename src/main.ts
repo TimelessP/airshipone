@@ -317,14 +317,15 @@ const cloneControls = (value: ControlMap): ControlMap => {
 
 let appVersion = 'dev';
 const loadVersion = async () => {
-  const response = await fetch('/version.js', { cache: 'no-store' });
+  const versionUrl = new URL(`${import.meta.env.BASE_URL}version.js`, window.location.origin).toString();
+  const response = await fetch(versionUrl, { cache: 'no-store' });
   if (!response.ok) {
-    throw new Error(`Failed to load /version.js (${response.status})`);
+    throw new Error(`Failed to load ${versionUrl} (${response.status})`);
   }
   const source = await response.text();
   const match = source.match(/APP_VERSION\s*=\s*['\"]([^'\"]+)['\"]/);
   if (!match || typeof match[1] !== 'string' || match[1].length === 0) {
-    throw new Error('Failed to parse APP_VERSION from /version.js');
+    throw new Error(`Failed to parse APP_VERSION from ${versionUrl}`);
   }
   appVersion = match[1];
 };
@@ -564,19 +565,29 @@ const getMaterial = (block: ModuleBlock): THREE.MeshStandardMaterial => {
   const texture = getTexture(block.material.tileId);
   const isWindow = block.role.includes('window');
   const isCeilingLight = block.role.includes('ceiling-light');
-  const material = new THREE.MeshStandardMaterial({
+  const params: THREE.MeshStandardMaterialParameters = {
     color: roleColor(block.role),
-    map: texture ?? undefined,
-    alphaMap: isWindow ? (texture ?? undefined) : undefined,
     alphaTest: isWindow ? 0.08 : 0,
     metalness: isWindow ? 0.15 : 0.05,
     roughness: isWindow ? 0.25 : 0.85,
     transparent: isWindow,
     opacity: 1,
     depthWrite: !isWindow,
-    emissive: isCeilingLight ? new THREE.Color(0xfff6b8) : undefined,
     emissiveIntensity: isCeilingLight ? 1.5 : 0
-  });
+  };
+
+  if (texture) {
+    params.map = texture;
+    if (isWindow) {
+      params.alphaMap = texture;
+    }
+  }
+
+  if (isCeilingLight) {
+    params.emissive = new THREE.Color(0xfff6b8);
+  }
+
+  const material = new THREE.MeshStandardMaterial(params);
 
   if (texture && block.material.uvMode === 'repeat' && block.primitive === 'box') {
     const [sizeX, , sizeZ] = getVector3(block.size, `block size (${block.id})`);

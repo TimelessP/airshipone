@@ -30,16 +30,11 @@ if [[ "$CURRENT_BRANCH" != "main" ]]; then
   exit 1
 fi
 
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "Error: working tree is not clean. Commit/stash changes before release." >&2
-  exit 1
-fi
-
-echo "Step 1/4: run full validation checks"
-./dev-test.sh
-
-echo "Step 2/4: bump version and build"
+echo "Step 1/4: bump version and build"
 ./dev-build-bump-ver.sh
+
+echo "Step 2/4: run full validation checks"
+./dev-test.sh
 
 NEW_VERSION="$(node -p "require('./package.json').version")"
 if [[ -z "$NEW_VERSION" || "$NEW_VERSION" == "undefined" ]]; then
@@ -47,7 +42,7 @@ if [[ -z "$NEW_VERSION" || "$NEW_VERSION" == "undefined" ]]; then
   exit 1
 fi
 
-echo "Step 3/4: stage and commit release artifacts"
+echo "Step 3/4: stage and commit release changes"
 git add -A
 if [[ -z "$(git status --porcelain)" ]]; then
   echo "Error: no changes to commit after release build." >&2
