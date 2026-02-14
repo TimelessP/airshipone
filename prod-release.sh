@@ -14,6 +14,11 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v gh >/dev/null 2>&1; then
+  echo "Error: gh is required but not found in PATH." >&2
+  exit 1
+fi
+
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Error: this script must run inside a git repository." >&2
   exit 1
@@ -52,5 +57,30 @@ git commit -m "release: v${NEW_VERSION}"
 
 echo "Step 4/4: push release commit to origin/main"
 git push origin main
+
+echo "Step 5/5: create GitHub release"
+if ! gh auth status >/dev/null 2>&1; then
+  echo "Error: gh is not authenticated. Run: gh auth login" >&2
+  exit 1
+fi
+
+RELEASE_TAG="v${NEW_VERSION}"
+
+if git rev-parse "$RELEASE_TAG" >/dev/null 2>&1; then
+  echo "Error: git tag ${RELEASE_TAG} already exists locally." >&2
+  exit 1
+fi
+
+git tag "$RELEASE_TAG"
+git push origin "$RELEASE_TAG"
+
+if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+  echo "GitHub release ${RELEASE_TAG} already exists; skipping create."
+else
+  gh release create "$RELEASE_TAG" \
+    --title "$RELEASE_TAG" \
+    --generate-notes \
+    --verify-tag
+fi
 
 echo "Release complete: v${NEW_VERSION}"

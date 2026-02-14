@@ -317,7 +317,7 @@ const cloneControls = (value: ControlMap): ControlMap => {
 
 let appVersion = 'dev';
 const loadVersion = async () => {
-  const versionUrl = new URL(`${import.meta.env.BASE_URL}version.js`, window.location.origin).toString();
+  const versionUrl = new URL(`${import.meta.env.BASE_URL}version.js`, window.location.href).toString();
   const response = await fetch(versionUrl, { cache: 'no-store' });
   if (!response.ok) {
     throw new Error(`Failed to load ${versionUrl} (${response.status})`);
