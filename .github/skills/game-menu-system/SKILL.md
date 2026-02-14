@@ -67,6 +67,13 @@ if (menuDef.isRoot) {
 }
 ```
 
+### 3b) Root vs Submenu Action Convention
+Use action buttons consistently:
+- **Root-level menus** should expose **Close** (`behavior: 'close'`).
+- **Submenus** should expose **Back** (`behavior: 'back'`).
+
+This prevents ambiguous navigation and keeps stack behavior predictable when menus are opened directly from world interactions.
+
 ## Rendering and Updates
 
 ### 1) Two Update Strategies
@@ -151,6 +158,25 @@ function renderUnifiedSpacebookItem(container, item, menuDef) {
   container.appendChild(wrapper);
 }
 ```
+
+### 2d) Document/Letter Content Pattern
+For readable in-world documents (letters, logs, memos), prefer one structured custom item over multiple spacer text rows.
+
+```js
+{
+  type: 'letter',
+  from: 'Chief Engineer',
+  to: 'Captain',
+  subject: 'Routing Update',
+  dateUtc: '2026-02-14 22:10:00 UTC',
+  paragraphs: ['Paragraph 1', 'Paragraph 2']
+}
+```
+
+Renderer guidance:
+- Render metadata (from/to/subject/date) in a header block.
+- Render body as paragraph elements from `paragraphs[]`.
+- Set an explicit dark ink text color in the custom row styles; do not rely on global value colors intended for generic menu rows.
 
 ### 2c) Tables With Button Columns
 Use a `table` item when you need rows with button actions. Each row is an array of cells; button cells use `{ type: 'button', label, action, behavior }`.

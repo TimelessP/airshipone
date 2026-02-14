@@ -22,10 +22,11 @@ Keep contributors aligned on:
 - Architecture target: modular ECS + typed event queue + multi-rate update domains.
 - Version source of truth: `package.json` `version`.
 - Theme model: runtime light/dark mode with tokenized Victorian wood/paper/velvet palette.
-- Menu model: data-driven stack-based DOM overlay menus with submenu/back/close behaviors.
-- Save model (current scaffold): browser `localStorage` envelope including settings + local simulation, with JSON export/import roundtrip.
+- Menu model: data-driven stack-based DOM overlay menus with submenu/back/close behaviors and custom menu item renderers (e.g., `letter`).
+- Save model (current scaffold): browser `localStorage` envelope including settings + local simulation, with JSON export/import roundtrip and persisted player pose (`position`, `yaw`, `pitch`).
 - Controls model (current scaffold): dual bindings (keyboard + gamepad button/axis) with HID-safe rebind capture baseline.
 - Module generation model: parameterized generator profiles for generic module types and exact module variants (`--interior-profile auto|none|captains-cabin`).
+- Lighting model (current scaffold): UTC-driven global sun + ambient from observer lat/lon and planet parameters.
 - Generated version artifacts:
   - `public/version.js` (local/dev fallback and build-time overwrite),
   - `dist/version.js` (must match deployed build version).
@@ -73,6 +74,13 @@ If visual surface appears to grow continuously:
 - Avoid style updates that change the observed container dimensions each callback.
 - Prefer stable wrapper sizing and only update renderer/canvas dimensions from external layout changes.
 - Add temporary logging around resize callback dimensions to verify convergence.
+
+### Known Early Pitfall: Texture Update Warning on First Frames
+
+If you see `THREE.WebGLRenderer: Texture marked for update but no image data found`:
+- Ensure tile textures are preloaded before creating module meshes/materials.
+- Avoid cloning repeat-variant textures before the source image is loaded.
+- Centralize texture configuration (wrap, color space, anisotropy) for both preload and fallback load paths.
 
 ## Pre-Commit / Pre-Handoff Checklist
 

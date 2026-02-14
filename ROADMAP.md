@@ -323,7 +323,8 @@ Create a single-player airship simulator that is technically robust, mathematica
 
 ### 4.2 Player Locomotion
 - [ ] Implement first/third-person interior movement controls
-- [ ] Add interaction targeting for station hotspots
+- [~] Add interaction targeting for station hotspots
+  - [x] First proximity-gated hotspot interaction implemented: captain's desk A4 paper opens unified letter menu
 - [ ] Add context prompts for interactable stations
 
 ### 4.3 Station Anchors
@@ -379,18 +380,19 @@ Create a single-player airship simulator that is technically robust, mathematica
 ## Phase 6 — Unified Menu System (DOM Overlay, Pixel Style)
 
 ### 6.1 Unified Menu Architecture
-- [ ] Implement data-driven `MENUS` registry and handler map
-- [ ] Implement stack-based navigation (root replace, submenu push)
-- [ ] Implement behavior attributes (`keep-open`, `back`, `submenu`, `close`, `close-all`)
-- [ ] Implement in-place value refresh for setting rows
+- [x] Implement data-driven `MENUS` registry and handler map
+- [x] Implement stack-based navigation (root replace, submenu push)
+- [x] Implement behavior attributes (`keep-open`, `back`, `submenu`, `close`, `close-all`)
+- [x] Implement in-place value refresh for setting rows
 - [ ] Implement full in-place rebuild when list structure changes
 
 ### 6.2 Menu Component Coverage
-- [ ] Setting rows with inline actions
-- [ ] Action rows with danger/disabled states
-- [ ] Divider and section rows
+- [x] Setting rows with inline actions
+- [x] Action rows with danger/disabled states
+- [x] Divider and section rows
 - [ ] Table rows with per-cell action buttons
-- [ ] Specialized feed/log rows (for social/comms-style content)
+- [~] Specialized feed/log rows (for social/comms-style content)
+  - [x] Custom non-standard row implemented: structured `letter` item renderer for captains-letter menu
 
 ### 6.3 Pixel-Accurate DOM Styling System
 - [ ] Define root scale token (`--pixel-scale`)
@@ -698,5 +700,5 @@ Create a single-player airship simulator that is technically robust, mathematica
   - [ ] 25 FPS fixed-step loop
   - [ ] typed event queue
   - [x] 320x320 render target scaled to viewport
-  - [ ] one station interaction opening unified menu overlay
+  - [x] one station interaction opening unified menu overlay
 - [ ] Publish first internal preview build
