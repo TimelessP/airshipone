@@ -20,9 +20,14 @@ These instructions are for AI coding agents working in this repository.
 - Persistent full-width top bar exists in `src/main.ts` (left hamburger menu toggle, centered title, right icon-only system/light/dark switcher).
 - Asset pipeline specification exists at [skills/airship-one-asset-pipeline/SKILL.md](./skills/airship-one-asset-pipeline/SKILL.md) and defines module packaging, invisible gameplay volumes, and build-time texel-consistent 1024x1024 atlas mapping.
 - Parameter-driven module shell generator exists at `scripts/generate-module-shell.mjs` and writes generated module metadata to `src/content/modules/*.module.json`, including exact module interior profiles (currently `captains-cabin`).
+- Runtime module template registration now uses handler files under `src/modules/handlers/*.ts` with centralized registry wiring in `src/modules/registry.ts`; adding/removing a module type is file-based plus registry export wiring.
 - `captains_cabin_mk1` is generated via profile and includes authored furnishings (bed, locker, bookshelf with leather-bound books, desk, chair, A4 desk paper) as geometry plus blocked gameplay volumes.
+- Ladder room profile variants are now supported (`single`, `lowest`, `middle`, `highest`) with authored `climb` volumes and floor/ceiling hole variants for vertical traversal setups.
 - Runtime preview in `src/main.ts` now renders generated module block shells (including corridor window strips) using tile PNG textures from `assets/textures/tiles`.
 - Runtime module-join controls now use in-world `+/-` affordances with proximity gating and a center reticle hint; insert/remove rebuilds module chain and revalidates player position to nearest occupiable volume.
+- Interior module layout now persists independently per ladder floor via `simulation.floorModuleIdsByLevel`; insert/remove operations mutate only the targeted floor chain.
+- Ladder floor rendering now aligns ladder center Z across levels; floor add/remove must preserve vertical shaft alignment.
+- Floor/module ownership now uses strict explicit level state helpers in `src/main.ts` with no implicit cross-floor module fallback.
 - First 3D proximity interactable now exists: the captain's desk A4 paper opens a root-level unified menu letter view with a custom `letter` menu item renderer.
 - Global scene lighting now follows UTC-driven sun + ambient calculations using observer latitude/longitude and planet parameters (rotation/orbital angle/tilt/distance).
 - Tile textures are preloaded before first module/material creation to prevent Three.js `Texture marked for update but no image data found` warnings.
@@ -92,7 +97,7 @@ Treat this as permission to proceed autonomously with the next coherent, scoped 
 6. **Continue flow by default**
   - After finishing one slice, immediately pick the next eligible roadmap item unless the user redirects.
   - Ask questions only when blocked by ambiguity that materially affects architecture or behavior.
-  - If blocked, present one concrete unblock option and one fallback path.
+  - If blocked, present one concrete unblock option; do not implement fallback behavior.
 
 ### Slice Ordering Heuristics
 
@@ -118,6 +123,7 @@ Treat this as permission to proceed autonomously with the next coherent, scoped 
 - Avoid adding dependencies unless they are justified by roadmap scope.
 - Do not introduce backend or server assumptions.
 - Fail fast for runtime/debuggability: do not silently swallow exceptions and do not add silent fallback paths that hide defects.
+- Early development policy: do not add save/data migrations, do not add fallback execution paths, and do not hide exceptions.
 - If handling expected user-input errors, surface explicit, actionable errors instead of masking them.
 
 ## Multi-Rate Runtime Rules

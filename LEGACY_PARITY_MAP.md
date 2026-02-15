@@ -26,7 +26,7 @@ For each row:
 | Status | Legacy contract | New target | Verification |
 |---|---|---|---|
 | [ ] | Single loop in `main.py` with `clock.tick(60)`, scene update + render each frame | `src/core/scheduler/*` multi-rate domains: `simTick`, `renderTick`, `terrainHarvestTick`, `audioTick` | Determinism test: same sim result under different render FPS |
-| [ ] | Simulator updates via `CoreSimulator.update(real_dt)` | `src/sim/sim-loop.ts` fixed-step `simTick` at 25 Hz | Sim drift test over 10 min equivalent runtime |
+| [~] | Simulator updates via `CoreSimulator.update(real_dt)` | `src/main.ts` temporary fixed-step `simTick` at 25 Hz (accumulator + max catch-up); planned extraction to `src/sim/sim-loop.ts` | Sim drift test over 10 min equivalent runtime |
 | [ ] | Expensive terrain generation mixed into scene rendering paths | `src/render/terrain/jobs/*` time-sliced `terrainHarvestTick` | Budget test: terrain jobs never starve `simTick` |
 
 ---
@@ -39,7 +39,7 @@ For each row:
 | [ ] | `settings` includes update-check and sound volume keys | `src/save/schema/settings.ts` | Migration test with missing keys |
 | [ ] | `navigation` includes position, motion, controls, targets, mode, autopilot, route, mapView | `src/sim/navigation/*` + `src/save/schema/navigation.ts` | Contract test for required keys |
 | [ ] | `engine` includes controls + pressure/temp/fuel-flow fields | `src/sim/engine/*` + `src/save/schema/engine.ts` | Engine step test vectors |
-| [ ] | `electrical` includes two batteries + alternator + loads | `src/sim/electrical/*` | Battery depletion/charge tests |
+| [~] | `electrical` includes two batteries + alternator + loads | `src/main.ts` temporary battery room controls + battery bus toggles/lights load + depletion; planned extraction to `src/sim/electrical/*` | Battery depletion/charge tests |
 | [ ] | `fuel` two tanks (forward/aft) with feed, transfer, dump rates | `src/sim/fuel/*` | Fuel transfer and feed-cut tests |
 | [ ] | `cargo` includes winch, hold/bay, crate types, CoG, refresh flags | `src/sim/cargo/*` + `src/save/schema/cargo.ts` | Placement + CoG integration tests |
 | [ ] | `environment` weather + time fields | `src/sim/environment/*` | Time progression and weather drift tests |
@@ -153,4 +153,5 @@ For each row:
 
 - This repository currently has planning docs and reference implementation sources.
 - Airship One now has initial Vite + TypeScript runtime scaffolding and PWA release tooling.
+- Runtime interior topology now stores per-floor module middle chains in `simulation.floorModuleIdsByLevel` with backward migration from legacy `simulation.moduleIds` saves.
 - Mark items only when code + tests exist in this repository.

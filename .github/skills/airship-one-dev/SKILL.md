@@ -26,6 +26,7 @@ Keep contributors aligned on:
 - Save model (current scaffold): browser `localStorage` envelope including settings + local simulation, with JSON export/import roundtrip and persisted player pose (`position`, `yaw`, `pitch`).
 - Controls model (current scaffold): dual bindings (keyboard + gamepad button/axis) with HID-safe rebind capture baseline.
 - Module generation model: parameterized generator profiles for generic module types and exact module variants (`--interior-profile auto|none|captains-cabin`).
+- Module runtime registry model: one handler file per module template under `src/modules/handlers/*.ts`, with `src/modules/registry.ts` as the single wiring point for fixed modules, insertable modules, and capability metadata (e.g., battery supply).
 - Lighting model (current scaffold): UTC-driven global sun + ambient from observer lat/lon and planet parameters.
 - Generated version artifacts:
   - `public/version.js` (local/dev fallback and build-time overwrite),
@@ -60,6 +61,21 @@ Keep contributors aligned on:
 - Keep state transitions event/command driven.
 - Keep UI as state consumer/dispatcher, not direct simulator mutator.
 - Keep spherical math correctness constraints explicit in all nav work.
+- Early-development fail-fast policy is strict: do not add save/data migrations, do not add fallback execution paths, and do not hide exceptions.
+
+## Floor/Module Ownership Rules
+
+- Use explicit per-floor ownership for interior modules via level-keyed arrays (`floorModuleIdsByLevel`).
+- Never resolve missing floor module arrays by inheriting from another floor; missing level state is a defect and should throw.
+- Keep ladder shaft alignment stable across levels by preserving a shared ladder center Z when floor layouts are rebuilt.
+- Compute movement/collision bounds from actual rendered placement extents, not assumptions tied to only one active floor.
+
+## Module Type Extension Rules
+
+- Add new module templates by creating a dedicated handler file in `src/modules/handlers/` and exporting it via `src/modules/handlers/index.ts`.
+- Keep module capability flags (e.g., battery supply) in handler metadata, not hardcoded ID-prefix checks in runtime logic.
+- Route chain construction and insertable-choice generation through `src/modules/registry.ts` only.
+- Keep fixed module rules (`cockpit` front, `cargo` rear) enforced by registry-level logic.
 
 ## Rendering and UI Guardrails
 

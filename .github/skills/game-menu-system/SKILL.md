@@ -141,6 +141,52 @@ function refreshUnifiedMenuValues(menuDef, items) {
 }
 ```
 
+### 2e) Queue-Driven Live Bindings (Recommended)
+For frequently changing simulator values (power, fuel, temperatures), prefer a queue-driven, in-place binding approach that never rebuilds the menu DOM while it is visible.
+
+Pattern:
+- Add a stable key per live value (for example `liveValueKey`).
+- During render, bind only the value element node to that key (`Map<key, HTMLElement>`).
+- Emit lightweight UI snapshot events from sim/event-queue only when values actually change.
+- On event consume, update bound text nodes directly (no `renderMenu()` call).
+- Keep `keep-open` behavior for toggle actions, but use a fast path that drains queue + applies live bindings and returns without redraw.
+
+```js
+// 1) Bind during render
+if (item.liveValueKey) {
+  liveMenuValueBindings.set(item.liveValueKey, valueEl);
+}
+
+// 2) Emit only on change
+function enqueueStatsIfChanged(stats) {
+  const nextSig = serialize(stats);
+  if (nextSig === lastSig) return;
+  lastSig = nextSig;
+  queue.push({ type: 'ui/menu-stats', stats });
+}
+
+// 3) Consume and update in-place
+function applyLiveStats(stats) {
+  if (!isTargetMenuVisible()) return;
+  for (const [key, element] of liveMenuValueBindings) {
+    element.textContent = toText(key, stats);
+  }
+}
+
+// 4) keep-open fast path (no redraw)
+if (behavior === 'keep-open' && isTargetMenuVisible()) {
+  drainEvents();
+  applyLiveStats(currentStats());
+  return; // preserve focus + scroll + DOM identity
+}
+```
+
+Why this is preferred:
+- Preserves current focused button and keyboard context.
+- Preserves scroll position in long/scrollable panels.
+- Avoids DOM churn and reduces GC/layout pressure.
+- Keeps simulation/event queue as the source of truth, UI as a consumer.
+
 ### 2b) Custom Item Types (Non-Standard Rows)
 When you introduce a new item type (for example, a feed entry with metadata + buttons), add a dedicated renderer and wire it in `renderUnifiedMenu`.
 

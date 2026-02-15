@@ -1,6 +1,6 @@
 {
   "schema": "airshipone.module.v1",
-  "id": "empty_room_mk1",
+  "id": "battery_room_mk1",
   "category": "interior-module",
   "moduleType": "room",
   "size": {
@@ -575,6 +575,75 @@
             1
           ]
         }
+      },
+      {
+        "id": "furn_battery_box_a",
+        "primitive": "box",
+        "role": "furniture-battery-box-a",
+        "center": [
+          -0.58,
+          0.655,
+          -1.02
+        ],
+        "size": [
+          0.86,
+          1.15,
+          0.72
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_battery_box_b",
+        "primitive": "box",
+        "role": "furniture-battery-box-b",
+        "center": [
+          0.58,
+          0.655,
+          -1.02
+        ],
+        "size": [
+          0.86,
+          1.15,
+          0.72
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_battery_control_panel",
+        "primitive": "box",
+        "role": "furniture-battery-control-panel",
+        "center": [
+          0,
+          1.45,
+          1.38
+        ],
+        "size": [
+          0.92,
+          0.92,
+          0.18
+        ],
+        "material": {
+          "tileId": "electrical-control-panel-front-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
       }
     ]
   },
@@ -895,6 +964,36 @@
           2.4,
           2.6,
           0.1
+        ]
+      },
+      {
+        "id": "blocked_furn_battery_box_a",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.58,
+          0.655,
+          -1.02
+        ],
+        "size": [
+          0.86,
+          1.15,
+          0.72
+        ]
+      },
+      {
+        "id": "blocked_furn_battery_box_b",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0.58,
+          0.655,
+          -1.02
+        ],
+        "size": [
+          0.86,
+          1.15,
+          0.72
         ]
       }
     ],
@@ -1254,6 +1353,42 @@
       "mesh": "wall_inner_right_lintel",
       "materialSlot": "albedo",
       "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_battery_box_a",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_battery_box_b",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_battery_control_panel",
+      "materialSlot": "albedo",
+      "tileId": "electrical-control-panel-front-256x256px",
       "uvMode": "repeat",
       "worldScaleM": [
         1,

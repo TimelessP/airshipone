@@ -271,7 +271,7 @@ When requesting a new tile set, Copilot should provide:
 
 Use the generator script to produce consistent starter shells from sizing parameters:
 
-- Command: `npm run generate:module -- --id <module_id> --module-type <room|open|cockpit|cargo> [--interior-profile <auto|none|captains-cabin>]`
+- Command: `npm run generate:module -- --id <module_id> --module-type <room|open|cockpit|cargo> [--interior-profile <auto|none|captains-cabin|battery-room|ladder-room-none|ladder-room-floor-hole|ladder-room-ceiling-hole|ladder-room-through>]`
 - Script: `scripts/generate-module-shell.mjs`
 - Output: `src/content/modules/<module_id>.module.json`
 
@@ -287,6 +287,11 @@ Use the generator script to produce consistent starter shells from sizing parame
   - `auto`: infer known exact profile from module id
   - `none`: no extra interior furniture blocks
   - `captains-cabin`: apply captain cabin furnishing layout
+  - `battery-room`: apply battery room furnishing layout
+  - `ladder-room-none`: ladder room without floor/ceiling cut-through holes
+  - `ladder-room-floor-hole`: ladder room with floor opening only
+  - `ladder-room-ceiling-hole`: ladder room with ceiling opening only
+  - `ladder-room-through`: ladder room with both floor and ceiling openings
 - `--length-u` module length in U units (`1U = 3.2m`)
 - `--room-width-m`, `--room-length-m`
 - `--corridor-width-m`, `--corridor-door-width-m`

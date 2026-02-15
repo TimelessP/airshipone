@@ -1,6 +1,6 @@
 {
   "schema": "airshipone.module.v1",
-  "id": "empty_room_mk1",
+  "id": "ladder_room_lowest_mk1",
   "category": "interior-module",
   "moduleType": "room",
   "size": {
@@ -94,52 +94,6 @@
   "geometry": {
     "primitiveSet": "block-shell-v1",
     "blocks": [
-      {
-        "id": "floor",
-        "primitive": "box",
-        "role": "floor",
-        "center": [
-          0,
-          0.04,
-          0
-        ],
-        "size": [
-          4.8,
-          0.08,
-          3.2
-        ],
-        "material": {
-          "tileId": "red-carpet-256x256px",
-          "uvMode": "repeat",
-          "worldScaleM": [
-            1,
-            1
-          ]
-        }
-      },
-      {
-        "id": "ceiling",
-        "primitive": "box",
-        "role": "ceiling",
-        "center": [
-          0,
-          2.56,
-          0
-        ],
-        "size": [
-          4.8,
-          0.08,
-          3.2
-        ],
-        "material": {
-          "tileId": "paper-bright-256x256px",
-          "uvMode": "repeat",
-          "worldScaleM": [
-            1,
-            1
-          ]
-        }
-      },
       {
         "id": "wall_outer_left_lower",
         "primitive": "box",
@@ -352,7 +306,7 @@
         "primitive": "cylinder",
         "role": "ceiling-light",
         "center": [
-          0,
+          0.92,
           2.44,
           0
         ],
@@ -566,6 +520,395 @@
           0.1,
           0.5,
           0.9
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "floor",
+        "primitive": "box",
+        "role": "floor",
+        "center": [
+          0,
+          0.04,
+          0
+        ],
+        "size": [
+          4.8,
+          0.08,
+          3.2
+        ],
+        "material": {
+          "tileId": "red-carpet-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "ceiling_left",
+        "primitive": "box",
+        "role": "ceiling",
+        "center": [
+          -1.395,
+          2.56,
+          0
+        ],
+        "size": [
+          2.01,
+          0.08,
+          3.2
+        ],
+        "material": {
+          "tileId": "paper-bright-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "ceiling_right",
+        "primitive": "box",
+        "role": "ceiling",
+        "center": [
+          1.395,
+          2.56,
+          0
+        ],
+        "size": [
+          2.01,
+          0.08,
+          3.2
+        ],
+        "material": {
+          "tileId": "paper-bright-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "ceiling_front",
+        "primitive": "box",
+        "role": "ceiling",
+        "center": [
+          0,
+          2.56,
+          -0.995
+        ],
+        "size": [
+          0.78,
+          0.08,
+          1.21
+        ],
+        "material": {
+          "tileId": "paper-bright-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "ceiling_rear",
+        "primitive": "box",
+        "role": "ceiling",
+        "center": [
+          0,
+          2.56,
+          0.995
+        ],
+        "size": [
+          0.78,
+          0.08,
+          1.21
+        ],
+        "material": {
+          "tileId": "paper-bright-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rail_left",
+        "primitive": "cylinder",
+        "role": "furniture-ladder-rail",
+        "center": [
+          -0.14,
+          1.46,
+          0
+        ],
+        "radiusTop": 0.02,
+        "radiusBottom": 0.02,
+        "height": 2.76,
+        "radialSegments": 18,
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rail_right",
+        "primitive": "cylinder",
+        "role": "furniture-ladder-rail",
+        "center": [
+          0.14,
+          1.46,
+          0
+        ],
+        "radiusTop": 0.02,
+        "radiusBottom": 0.02,
+        "height": 2.76,
+        "radialSegments": 18,
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_1",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          0.24,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_2",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          0.516,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_3",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          0.791,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_4",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          1.067,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_5",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          1.342,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_6",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          1.618,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_7",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          1.893,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_8",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          2.169,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_9",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          2.444,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_ladder_rung_10",
+        "primitive": "box",
+        "role": "furniture-ladder-rung",
+        "center": [
+          0,
+          2.72,
+          0
+        ],
+        "size": [
+          0.36,
+          0.03,
+          0.06
         ],
         "material": {
           "tileId": "brass-panel-256x256px",
@@ -898,7 +1241,23 @@
         ]
       }
     ],
-    "climb": [],
+    "climb": [
+      {
+        "id": "climb_ladder_column",
+        "shape": "box",
+        "kind": "climb",
+        "center": [
+          0,
+          1.52,
+          0
+        ],
+        "size": [
+          0.78,
+          3.04,
+          0.78
+        ]
+      }
+    ],
     "headBump": [
       {
         "id": "headbump_ceiling",
@@ -1010,30 +1369,6 @@
     ]
   },
   "textureBindings": [
-    {
-      "mesh": "floor",
-      "materialSlot": "albedo",
-      "tileId": "red-carpet-256x256px",
-      "uvMode": "repeat",
-      "worldScaleM": [
-        1,
-        1
-      ],
-      "rotationDeg": 0,
-      "mirrorX": false
-    },
-    {
-      "mesh": "ceiling",
-      "materialSlot": "albedo",
-      "tileId": "paper-bright-256x256px",
-      "uvMode": "repeat",
-      "worldScaleM": [
-        1,
-        1
-      ],
-      "rotationDeg": 0,
-      "mirrorX": false
-    },
     {
       "mesh": "wall_outer_left_lower",
       "materialSlot": "albedo",
@@ -1252,6 +1587,210 @@
     },
     {
       "mesh": "wall_inner_right_lintel",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "floor",
+      "materialSlot": "albedo",
+      "tileId": "red-carpet-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "ceiling_left",
+      "materialSlot": "albedo",
+      "tileId": "paper-bright-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "ceiling_right",
+      "materialSlot": "albedo",
+      "tileId": "paper-bright-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "ceiling_front",
+      "materialSlot": "albedo",
+      "tileId": "paper-bright-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "ceiling_rear",
+      "materialSlot": "albedo",
+      "tileId": "paper-bright-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rail_left",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rail_right",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_1",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_2",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_3",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_4",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_5",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_6",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_7",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_8",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_9",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_ladder_rung_10",
       "materialSlot": "albedo",
       "tileId": "brass-panel-256x256px",
       "uvMode": "repeat",

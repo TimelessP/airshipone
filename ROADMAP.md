@@ -17,7 +17,7 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [ ] Hybrid UI: DOM overlays for menus/dialogs, pixel aesthetic preserved
 - [x] Unified menu system pattern (data-driven, stack-based, keep-open behaviors)
 - [ ] Offline-ready PWA (manifest + service worker + deterministic cache versioning)
-- [ ] Deterministic simulation cadence target at 25 FPS with delta-time support
+- [~] Deterministic simulation cadence target at 25 FPS with delta-time support
 - [ ] Simulation, render, and terrain-harvest run on separate schedulers (multi-rate)
 - [ ] Spherical navigation correctness (including poles and longitude wrap)
 - [ ] Range rings and route math based on spherical calculations (no shortcuts)
@@ -178,15 +178,15 @@ Create a single-player airship simulator that is technically robust, mathematica
 
 ### 1.3 Typed Event Queue
 - [ ] Define event envelope (`type`, timestamp, payload, source)
-- [ ] Create strongly typed event map for compile-time payload safety
-- [ ] Implement queue push/pop and bounded capacity behavior
-- [ ] Implement deterministic per-tick dispatch ordering
+- [~] Create strongly typed event map for compile-time payload safety
+- [~] Implement queue push/pop and bounded capacity behavior
+- [~] Implement deterministic per-tick dispatch ordering
 - [ ] Add event tracing mode for debugging/replay
 
 ### 1.4 App Loop
-- [ ] Implement fixed-step sim loop targeting 25 FPS
-- [ ] Implement accumulator pattern with max catch-up cap
-- [ ] Keep render decoupled from sim step
+- [~] Implement fixed-step sim loop targeting 25 FPS
+- [~] Implement accumulator pattern with max catch-up cap
+- [~] Keep render decoupled from sim step
 - [ ] Track delta-time metrics and frame pacing diagnostics
 
 ### 1.5 Multi-Rate Timing Architecture (Required)
@@ -298,33 +298,40 @@ Create a single-player airship simulator that is technically robust, mathematica
 ### 4.1.a Modular Interior Asset Pipeline
 - [x] Add formal module/volume/texture pipeline specification (`.github/skills/airship-one-asset-pipeline/SKILL.md`)
 - [ ] Define `module.v1` metadata schema contract in runtime loader
-- [ ] Define module slot graph rules (fixed `cockpit` front, fixed `cargo` rear, dynamic middle modules)
-- [ ] Implement insert/remove module command validation (`+`/`-` wall controls near corridor doorway)
+- [x] Define module slot graph rules (fixed `cockpit` front, fixed `cargo` rear, dynamic middle modules)
+- [x] Implement insert/remove module command validation (`+`/`-` wall controls near corridor doorway)
 - [ ] Implement build-time texture atlas generator contract (`1024x1024` pages + manifest)
 - [ ] Enforce texel density target across all interior surfaces
 - [ ] Add asset validation checks (connector compatibility, traversable corridor, invalid volume overlaps)
 
 ### 4.1.b Invisible Gameplay Volumes
 - [ ] Standardize volume primitives (`box`, `capsule`, `convex`) for module metadata
-- [ ] Integrate `walkable`/`blocked`/`climb`/`headBump`/`doorway` query pipeline
-- [ ] Add jump head-hit and ladder traversal checks against authored volumes
+- [~] Integrate `walkable`/`blocked`/`climb`/`headBump`/`doorway` query pipeline
+- [~] Add jump head-hit and ladder traversal checks against authored volumes
 - [ ] Add doorway transition triggers from authored `doorway` volumes
 
 ### 4.1.c Authoring Workflow (User + Copilot)
 - [x] Add dedicated skill for module authoring process (`.github/skills/airship-one-asset-pipeline/SKILL.md`)
 - [x] Add first module template package under runtime content path (`src/content/modules/captains_cabin_mk1.module.json`)
 - [x] Add parameter-driven module shell generator (`scripts/generate-module-shell.mjs`) with `room/open/cockpit/cargo` profiles
-- [x] Use parameterized generator as source-of-truth for exact module variants via interior profiles (`auto|none|captains-cabin`)
+- [x] Use parameterized generator as source-of-truth for exact module variants via interior profiles (`auto|none|captains-cabin|battery-room`)
 - [x] Add captain's cabin furnishing profile generation (bed, locker, bookshelf + leather-bound books, desk, chair, A4 desk paper)
+- [x] Add battery room furnishing profile generation (battery boxes + wall control panel)
+- [x] Add ladder room profile generation variants (single/lowest/middle/highest with floor/ceiling-hole options)
 - [x] Add in-world join controls (`+` insert, `-` remove) with fixed-module removal guards
 - [x] Add proximity-gated join control visibility with center reticle interaction hint
 - [x] Add nearest-walkable player relocation when module-chain changes produce invalid occupancy
+- [x] Persist and edit independent module chains per ladder floor (`floorModuleIdsByLevel`) to prevent cross-floor mutation coupling
+- [x] Enforce strict floor/module helper usage with explicit level ownership (no implicit cross-floor fallback)
+- [x] Align ladder module center Z across floors to keep vertical shafts aligned after floor insert/remove
+- [x] Add file-based runtime module handler registry (`src/modules/handlers/*.ts` + `src/modules/registry.ts`) for add/remove module type workflows
 - [ ] Add texture request checklist and acceptance gates to contributor docs
 
 ### 4.2 Player Locomotion
 - [ ] Implement first/third-person interior movement controls
 - [~] Add interaction targeting for station hotspots
   - [x] First proximity-gated hotspot interaction implemented: captain's desk A4 paper opens unified letter menu
+  - [x] Battery room control panel hotspot opens root-level battery control menu
 - [ ] Add context prompts for interactable stations
 
 ### 4.3 Station Anchors

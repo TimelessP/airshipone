@@ -28,7 +28,16 @@ const DEFAULTS = {
 };
 
 const MODULE_TYPES = new Set(['room', 'open', 'cockpit', 'cargo']);
-const INTERIOR_PROFILES = new Set(['auto', 'none', 'captains-cabin']);
+const INTERIOR_PROFILES = new Set([
+  'auto',
+  'none',
+  'captains-cabin',
+  'battery-room',
+  'ladder-room-none',
+  'ladder-room-floor-hole',
+  'ladder-room-ceiling-hole',
+  'ladder-room-through'
+]);
 
 const round = (value) => Math.round(value * 1000) / 1000;
 
@@ -109,11 +118,22 @@ const applyModuleTypeProfile = (params) => {
   }
 
   if (!INTERIOR_PROFILES.has(params.interiorProfile)) {
-    throw new Error(`Unsupported interior profile: ${params.interiorProfile}. Use one of: auto, none, captains-cabin`);
+    throw new Error('Unsupported interior profile: '
+      + `${params.interiorProfile}. Use one of: auto, none, captains-cabin, battery-room, `
+      + 'ladder-room-none, ladder-room-floor-hole, ladder-room-ceiling-hole, ladder-room-through');
   }
 
-  if (params.interiorProfile === 'captains-cabin' && params.moduleType !== 'room') {
-    throw new Error('Interior profile captains-cabin requires --module-type room');
+  const roomOnlyProfiles = new Set([
+    'captains-cabin',
+    'battery-room',
+    'ladder-room-none',
+    'ladder-room-floor-hole',
+    'ladder-room-ceiling-hole',
+    'ladder-room-through'
+  ]);
+
+  if (roomOnlyProfiles.has(params.interiorProfile) && params.moduleType !== 'room') {
+    throw new Error(`Interior profile ${params.interiorProfile} requires --module-type room`);
   }
 
   if (params.moduleType === 'cockpit') {
@@ -187,6 +207,7 @@ const loadTileAssignments = async () => {
     ceiling: findTile(tileIds, ['paper-bright', 'paper', 'oak'], 'walnut'),
     window: findTile(tileIds, ['glass-pane'], 'paper'),
     trim: findTile(tileIds, ['brass', 'oak', 'walnut'], 'paper'),
+    controlPanelFront: findTile(tileIds, ['electrical-control-panel-front'], 'brass'),
     wood: findTile(tileIds, ['oak', 'walnut'], 'paper'),
     leather: requireTile(tileIds, 'leather-brown-256x256px'),
     paper: findTile(tileIds, ['paper-bright', 'paper'], 'paper')
@@ -200,6 +221,26 @@ const resolveInteriorProfile = (params) => {
 
   if (params.id === 'captains_cabin_mk1') {
     return 'captains-cabin';
+  }
+
+  if (params.id === 'battery_room_mk1') {
+    return 'battery-room';
+  }
+
+  if (params.id === 'ladder_room_single_mk1') {
+    return 'ladder-room-none';
+  }
+
+  if (params.id === 'ladder_room_lowest_mk1') {
+    return 'ladder-room-ceiling-hole';
+  }
+
+  if (params.id === 'ladder_room_middle_mk1') {
+    return 'ladder-room-through';
+  }
+
+  if (params.id === 'ladder_room_highest_mk1') {
+    return 'ladder-room-floor-hole';
   }
 
   return 'none';
@@ -384,6 +425,160 @@ const addCaptainsCabinFurnishings = ({ blocks, blocked, params, tiles, roomMinX,
   });
 };
 
+const addBatteryRoomFurnishings = ({ blocks, blocked, params, tiles, moduleLengthM }) => {
+  const roomFrontZ = -((moduleLengthM / 2) - params.wallOuterM);
+  const roomRearZ = (moduleLengthM / 2) - params.wallOuterM;
+  const floorTopY = params.floorThicknessM;
+
+  const addFurniture = ({ id, role, center, size, tileId, addBlocked = true }) => {
+    blocks.push(makeBox(id, role, center, size, tileId));
+    if (addBlocked) {
+      blocked.push(makeVolumeBox(`blocked_${id}`, 'blocked', center, size));
+    }
+  };
+
+  const batteryDepth = 0.72;
+  const batteryWidth = 0.86;
+  const batteryHeight = 1.15;
+  const batteryCenterZ = roomFrontZ + (batteryDepth / 2) + 0.12;
+
+  addFurniture({
+    id: 'furn_battery_box_a',
+    role: 'furniture-battery-box-a',
+    center: [-0.58, floorTopY + (batteryHeight / 2), batteryCenterZ],
+    size: [batteryWidth, batteryHeight, batteryDepth],
+    tileId: tiles.trim
+  });
+
+  addFurniture({
+    id: 'furn_battery_box_b',
+    role: 'furniture-battery-box-b',
+    center: [0.58, floorTopY + (batteryHeight / 2), batteryCenterZ],
+    size: [batteryWidth, batteryHeight, batteryDepth],
+    tileId: tiles.trim
+  });
+
+  addFurniture({
+    id: 'furn_battery_control_panel',
+    role: 'furniture-battery-control-panel',
+    center: [0, 1.45, roomRearZ - 0.12],
+    size: [0.92, 0.92, 0.18],
+    tileId: tiles.controlPanelFront,
+    addBlocked: false
+  });
+};
+
+const isLadderProfile = (profile) => profile.startsWith('ladder-room-');
+
+const getLadderProfileOpenings = (profile) => {
+  return {
+    floorHole: profile === 'ladder-room-floor-hole' || profile === 'ladder-room-through',
+    ceilingHole: profile === 'ladder-room-ceiling-hole' || profile === 'ladder-room-through'
+  };
+};
+
+const addHorizontalPanelWithOptionalCenterHole = ({
+  blocks,
+  idPrefix,
+  role,
+  tileId,
+  yCenter,
+  thickness,
+  moduleWidthM,
+  moduleLengthM,
+  holeWidth,
+  holeLength,
+  hasHole
+}) => {
+  if (!hasHole) {
+    blocks.push(makeBox(idPrefix, role, [0, yCenter, 0], [moduleWidthM, thickness, moduleLengthM], tileId));
+    return;
+  }
+
+  const sideWidth = Math.max(0.12, (moduleWidthM - holeWidth) / 2);
+  const frontBackLength = Math.max(0.12, (moduleLengthM - holeLength) / 2);
+  const sideCenterX = (holeWidth / 2) + (sideWidth / 2);
+  const frontBackCenterZ = (holeLength / 2) + (frontBackLength / 2);
+
+  blocks.push(
+    makeBox(`${idPrefix}_left`, role, [-sideCenterX, yCenter, 0], [sideWidth, thickness, moduleLengthM], tileId),
+    makeBox(`${idPrefix}_right`, role, [sideCenterX, yCenter, 0], [sideWidth, thickness, moduleLengthM], tileId),
+    makeBox(`${idPrefix}_front`, role, [0, yCenter, -frontBackCenterZ], [holeWidth, thickness, frontBackLength], tileId),
+    makeBox(`${idPrefix}_rear`, role, [0, yCenter, frontBackCenterZ], [holeWidth, thickness, frontBackLength], tileId)
+  );
+};
+
+const addLadderRoomFurnishings = ({
+  blocks,
+  climb,
+  params,
+  tiles,
+  moduleLengthM,
+  interiorProfile
+}) => {
+  const floorTopY = params.floorThicknessM;
+  const ceilingBottomY = params.heightM - params.ceilingThicknessM;
+  const shaftWidth = 0.78;
+  const shaftLength = 0.78;
+  const ladderRailOffset = 0.14;
+  const railRadius = 0.02;
+  const ladderRailOverlapM = 0.24;
+  const climbOverlapM = 0.44;
+
+  const openings = getLadderProfileOpenings(interiorProfile);
+  const railBottomY = openings.floorHole ? -ladderRailOverlapM : floorTopY;
+  const railTopY = openings.ceilingHole ? (params.heightM + ladderRailOverlapM) : (ceilingBottomY - 0.06);
+  const railHeight = Math.max(1.7, railTopY - railBottomY);
+  const railCenterY = railBottomY + (railHeight / 2);
+
+  const climbBottomY = openings.floorHole ? -climbOverlapM : 0;
+  const climbTopY = openings.ceilingHole ? (params.heightM + climbOverlapM) : params.clearHeightM;
+  const climbHeight = Math.max(1.7, climbTopY - climbBottomY);
+  const climbCenterY = climbBottomY + (climbHeight / 2);
+  addHorizontalPanelWithOptionalCenterHole({
+    blocks,
+    idPrefix: 'floor',
+    role: 'floor',
+    tileId: tiles.floor,
+    yCenter: params.floorThicknessM / 2,
+    thickness: params.floorThicknessM,
+    moduleWidthM: (2 * params.wallOuterM) + (2 * params.corridorWidthM) + (2 * params.wallInnerM) + params.roomWidthM,
+    moduleLengthM,
+    holeWidth: shaftWidth,
+    holeLength: shaftLength,
+    hasHole: openings.floorHole
+  });
+
+  addHorizontalPanelWithOptionalCenterHole({
+    blocks,
+    idPrefix: 'ceiling',
+    role: 'ceiling',
+    tileId: tiles.ceiling,
+    yCenter: params.heightM - (params.ceilingThicknessM / 2),
+    thickness: params.ceilingThicknessM,
+    moduleWidthM: (2 * params.wallOuterM) + (2 * params.corridorWidthM) + (2 * params.wallInnerM) + params.roomWidthM,
+    moduleLengthM,
+    holeWidth: shaftWidth,
+    holeLength: shaftLength,
+    hasHole: openings.ceilingHole
+  });
+
+  blocks.push(
+    makeCylinder('furn_ladder_rail_left', 'furniture-ladder-rail', [-ladderRailOffset, railCenterY, 0], railRadius, railHeight, tiles.trim),
+    makeCylinder('furn_ladder_rail_right', 'furniture-ladder-rail', [ladderRailOffset, railCenterY, 0], railRadius, railHeight, tiles.trim)
+  );
+
+  const rungCount = 10;
+  for (let rungIndex = 0; rungIndex < rungCount; rungIndex += 1) {
+    const rungY = (railBottomY + 0.16) + ((railHeight - 0.28) * (rungIndex / Math.max(1, rungCount - 1)));
+    blocks.push(makeBox(`furn_ladder_rung_${rungIndex + 1}`, 'furniture-ladder-rung', [0, rungY, 0], [0.36, 0.03, 0.06], tiles.trim));
+  }
+
+  climb.push(
+    makeVolumeBox('climb_ladder_column', 'climb', [0, climbCenterY, 0], [shaftWidth, climbHeight, shaftLength])
+  );
+};
+
 const makeBox = (id, role, center, size, tileId) => ({
   id,
   primitive: 'box',
@@ -462,6 +657,7 @@ const buildGeometryAndVolumes = (params, tiles) => {
   const blocked = [];
   const doorway = [];
   const headBump = [];
+  const climb = [];
 
   const windowSillHeight = 1.0;
   const windowTopHeight = 2.0;
@@ -479,6 +675,9 @@ const buildGeometryAndVolumes = (params, tiles) => {
   const ceilingLightRadius = 0.24;
   const ceilingLightHeight = 0.1;
   const ceilingLightY = params.heightM - params.ceilingThicknessM - (ceilingLightHeight / 2) - 0.03;
+  const ceilingLightCenterX = isLadderProfile(interiorProfile)
+    ? roomMaxX - 0.28
+    : 0;
   const leftWallCenterX = -(halfW - (params.wallOuterM / 2));
   const rightWallCenterX = halfW - (params.wallOuterM / 2);
   const leftPaneCenterX = (-halfW + params.wallOuterM) - (paneDepth / 2);
@@ -490,9 +689,14 @@ const buildGeometryAndVolumes = (params, tiles) => {
   const cockpitFrontPaneWidth = Math.max(0.7, cockpitFrontWindowWidth - 0.08);
   const cockpitFrontPaneCenterZ = frontWallZ - (params.wallOuterM / 2) + (paneDepth / 2);
 
+  if (!isLadderProfile(interiorProfile)) {
+    blocks.push(
+      makeBox('floor', 'floor', [0, yFloor, 0], [moduleWidthM, params.floorThicknessM, moduleLengthM], tiles.floor),
+      makeBox('ceiling', 'ceiling', [0, yCeiling, 0], [moduleWidthM, params.ceilingThicknessM, moduleLengthM], tiles.ceiling)
+    );
+  }
+
   blocks.push(
-    makeBox('floor', 'floor', [0, yFloor, 0], [moduleWidthM, params.floorThicknessM, moduleLengthM], tiles.floor),
-    makeBox('ceiling', 'ceiling', [0, yCeiling, 0], [moduleWidthM, params.ceilingThicknessM, moduleLengthM], tiles.ceiling),
     makeBox('wall_outer_left_lower', 'outer-wall', [leftWallCenterX, windowSillHeight / 2, 0], [params.wallOuterM, windowSillHeight, windowOpeningLength], tiles.wall),
     makeBox('wall_outer_left_upper', 'outer-wall', [leftWallCenterX, windowTopHeight + (wallUpperHeight / 2), 0], [params.wallOuterM, wallUpperHeight, windowOpeningLength], tiles.wall),
     makeBox('wall_outer_left_front_pillar', 'outer-wall', [leftWallCenterX, params.heightM / 2, -sidePillarOffsetZ], [params.wallOuterM, params.heightM, sidePillarLength], tiles.wall),
@@ -502,7 +706,7 @@ const buildGeometryAndVolumes = (params, tiles) => {
     makeBox('wall_outer_right_front_pillar', 'outer-wall', [rightWallCenterX, params.heightM / 2, -sidePillarOffsetZ], [params.wallOuterM, params.heightM, sidePillarLength], tiles.wall),
     makeBox('wall_outer_right_rear_pillar', 'outer-wall', [rightWallCenterX, params.heightM / 2, sidePillarOffsetZ], [params.wallOuterM, params.heightM, sidePillarLength], tiles.wall),
     makeBox('wall_rear', 'bulkhead-rear', [bulkheadRearCenterX, params.heightM / 2, rearWallZ], [bulkheadRearWidth, params.heightM, params.wallOuterM], tiles.wall),
-    makeCylinder('ceiling_light_center', 'ceiling-light', [0, ceilingLightY, 0], ceilingLightRadius, ceilingLightHeight, tiles.trim)
+    makeCylinder('ceiling_light_center', 'ceiling-light', [ceilingLightCenterX, ceilingLightY, 0], ceilingLightRadius, ceilingLightHeight, tiles.trim)
   );
 
   if (params.moduleType === 'cockpit') {
@@ -553,6 +757,7 @@ const buildGeometryAndVolumes = (params, tiles) => {
 
   if (hasInnerRoomPartitions) {
     const doorGap = params.corridorDoorWidthM;
+    const doorGapVolume = Math.min(moduleLengthM - 0.2, doorGap + 0.16);
     const segmentLength = (moduleLengthM - doorGap) / 2;
     const doorLintelHeight = Math.max(params.clearHeightM - 0.2, 1.9);
     const lintelHeight = params.heightM - doorLintelHeight;
@@ -578,8 +783,8 @@ const buildGeometryAndVolumes = (params, tiles) => {
     );
 
     doorway.push(
-      makeVolumeBox('doorway_room_left', 'doorway', [leftCorridorMaxX + (params.wallInnerM / 2), params.clearHeightM / 2, 0], [params.wallInnerM + 0.04, params.clearHeightM, doorGap]),
-      makeVolumeBox('doorway_room_right', 'doorway', [rightCorridorMinX - (params.wallInnerM / 2), params.clearHeightM / 2, 0], [params.wallInnerM + 0.04, params.clearHeightM, doorGap])
+      makeVolumeBox('doorway_room_left', 'doorway', [leftCorridorMaxX + (params.wallInnerM / 2), params.clearHeightM / 2, 0], [params.wallInnerM + 0.01, params.clearHeightM, doorGapVolume]),
+      makeVolumeBox('doorway_room_right', 'doorway', [rightCorridorMinX - (params.wallInnerM / 2), params.clearHeightM / 2, 0], [params.wallInnerM + 0.01, params.clearHeightM, doorGapVolume])
     );
   }
 
@@ -617,15 +822,15 @@ const buildGeometryAndVolumes = (params, tiles) => {
 
   if (frontCorridorOpen) {
     doorway.push(
-      makeVolumeBox('doorway_front_left', 'doorway', [((leftCorridorMinX + leftCorridorMaxX) / 2), params.clearHeightM / 2, frontWallZ], [params.corridorDoorWidthM, params.clearHeightM, params.wallOuterM + 0.04]),
-      makeVolumeBox('doorway_front_right', 'doorway', [((rightCorridorMinX + rightCorridorMaxX) / 2), params.clearHeightM / 2, frontWallZ], [params.corridorDoorWidthM, params.clearHeightM, params.wallOuterM + 0.04])
+      makeVolumeBox('doorway_front_left', 'doorway', [((leftCorridorMinX + leftCorridorMaxX) / 2), params.clearHeightM / 2, frontWallZ], [params.corridorWidthM, params.clearHeightM, params.wallOuterM + 0.01]),
+      makeVolumeBox('doorway_front_right', 'doorway', [((rightCorridorMinX + rightCorridorMaxX) / 2), params.clearHeightM / 2, frontWallZ], [params.corridorWidthM, params.clearHeightM, params.wallOuterM + 0.01])
     );
   }
 
   if (rearCorridorOpen) {
     doorway.push(
-      makeVolumeBox('doorway_rear_left', 'doorway', [((leftCorridorMinX + leftCorridorMaxX) / 2), params.clearHeightM / 2, rearWallZ], [params.corridorDoorWidthM, params.clearHeightM, params.wallOuterM + 0.04]),
-      makeVolumeBox('doorway_rear_right', 'doorway', [((rightCorridorMinX + rightCorridorMaxX) / 2), params.clearHeightM / 2, rearWallZ], [params.corridorDoorWidthM, params.clearHeightM, params.wallOuterM + 0.04])
+      makeVolumeBox('doorway_rear_left', 'doorway', [((leftCorridorMinX + leftCorridorMaxX) / 2), params.clearHeightM / 2, rearWallZ], [params.corridorWidthM, params.clearHeightM, params.wallOuterM + 0.01]),
+      makeVolumeBox('doorway_rear_right', 'doorway', [((rightCorridorMinX + rightCorridorMaxX) / 2), params.clearHeightM / 2, rearWallZ], [params.corridorWidthM, params.clearHeightM, params.wallOuterM + 0.01])
     );
   }
 
@@ -645,6 +850,27 @@ const buildGeometryAndVolumes = (params, tiles) => {
     });
   }
 
+  if (interiorProfile === 'battery-room') {
+    addBatteryRoomFurnishings({
+      blocks,
+      blocked,
+      params,
+      tiles,
+      moduleLengthM
+    });
+  }
+
+  if (isLadderProfile(interiorProfile)) {
+    addLadderRoomFurnishings({
+      blocks,
+      climb,
+      params,
+      tiles,
+      moduleLengthM,
+      interiorProfile
+    });
+  }
+
   return {
     moduleWidthM,
     moduleLengthM,
@@ -652,7 +878,7 @@ const buildGeometryAndVolumes = (params, tiles) => {
     volumes: {
       walkable,
       blocked,
-      climb: [],
+      climb,
       headBump,
       doorway
     }
@@ -744,7 +970,7 @@ const printUsage = () => {
   console.log('Options:');
   console.log('  --id <moduleId>');
   console.log('  --module-type <room|open|cockpit|cargo>');
-  console.log('  --interior-profile <auto|none|captains-cabin>');
+  console.log('  --interior-profile <auto|none|captains-cabin|battery-room|ladder-room-none|ladder-room-floor-hole|ladder-room-ceiling-hole|ladder-room-through>');
   console.log('  --length-u <number>');
   console.log('  --room-width-m <number>');
   console.log('  --room-length-m <number>');

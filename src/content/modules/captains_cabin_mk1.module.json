@@ -2394,9 +2394,9 @@
           0
         ],
         "size": [
-          0.14,
+          0.11,
           2.3,
-          0.9
+          1.06
         ]
       },
       {
@@ -2409,9 +2409,9 @@
           0
         ],
         "size": [
-          0.14,
+          0.11,
           2.3,
-          0.9
+          1.06
         ]
       },
       {
@@ -2424,9 +2424,9 @@
           -1.55
         ],
         "size": [
-          0.9,
+          1,
           2.3,
-          0.14
+          0.11
         ]
       },
       {
@@ -2439,9 +2439,9 @@
           -1.55
         ],
         "size": [
-          0.9,
+          1,
           2.3,
-          0.14
+          0.11
         ]
       },
       {
@@ -2454,9 +2454,9 @@
           1.55
         ],
         "size": [
-          0.9,
+          1,
           2.3,
-          0.14
+          0.11
         ]
       },
       {
@@ -2469,9 +2469,9 @@
           1.55
         ],
         "size": [
-          0.9,
+          1,
           2.3,
-          0.14
+          0.11
         ]
       }
     ]
@@ -3205,6 +3205,7 @@
     "ceiling": "paper-bright-256x256px",
     "window": "glass-pane-256x256px-alpha",
     "trim": "brass-panel-256x256px",
+    "controlPanelFront": "electrical-control-panel-front-256x256px",
     "wood": "oak-joined-boards-256x256px",
     "leather": "leather-brown-256x256px",
     "paper": "paper-bright-256x256px"
