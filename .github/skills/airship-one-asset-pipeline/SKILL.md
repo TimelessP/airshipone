@@ -223,7 +223,7 @@ Anchors are data; UI uses them to place prompts/buttons in 3D-to-UI projected ov
 - Light fixture sits just below ceiling level.
 - Fixture material is bright/emissive to read as a lit lamp body.
 - Runtime adds one pale yellow, dim-ish local light source per fixture.
-- Ceiling light local sources must not cast shadows.
+- Ceiling light local sources should cast shadows when powered.
 
 ## Validation Gates
 

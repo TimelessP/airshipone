@@ -9,8 +9,8 @@ Use this skill whenever implementing or changing UI layout/styling.
 
 ## Design Baseline
 
-- Entire playable composition is a single square (`game-square`) fit to available viewport.
-- No UI should live outside that square.
+- Entire playable composition fills the browser client area (`game-square` spans full viewport).
+- No UI should live outside that full-viewport container.
 - Page should naturally avoid scrollbars by layout design.
 
 ## Sizing System (Required)
@@ -47,7 +47,7 @@ Use this skill whenever implementing or changing UI layout/styling.
 ## UI Placement Rules
 
 - Overlay UI belongs in `.ui-layer` inside `.game-square` only.
-- Avoid external page chrome around the game square.
+- Avoid external page chrome around the full-viewport play area.
 - Keep focus outlines and borders tied to `--u`.
 
 ## Top Bar Rules (Required)

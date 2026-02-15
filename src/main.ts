@@ -1362,7 +1362,10 @@ const createModuleMesh = (moduleDoc: GeneratedModule): THREE.Group => {
       const light = new THREE.PointLight(0xfff5c2, 1.35, 5.2, 1.1);
       light.position.set(centerX, centerY - 0.06, centerZ);
       light.userData.baseIntensity = 1.35;
-      light.castShadow = false;
+      light.castShadow = true;
+      light.shadow.mapSize.set(512, 512);
+      light.shadow.bias = -0.00025;
+      light.shadow.normalBias = 0.02;
       group.add(light);
     }
   }
@@ -1718,7 +1721,7 @@ const applyModuleLightingState = (mainBusPowered: boolean) => {
   for (const light of ceilingLightPoints) {
     const baseIntensity = Number(light.userData.baseIntensity ?? 1.35);
     light.intensity = mainBusPowered ? baseIntensity : 0;
-    light.castShadow = !mainBusPowered;
+    light.castShadow = mainBusPowered;
   }
 
   for (const material of ceilingLightEmitterMaterials) {
@@ -1726,7 +1729,7 @@ const applyModuleLightingState = (mainBusPowered: boolean) => {
   }
 
   for (const mesh of ceilingLightEmitterMeshes) {
-    mesh.castShadow = !mainBusPowered;
+    mesh.castShadow = mainBusPowered;
     mesh.receiveShadow = true;
   }
 };
@@ -4362,7 +4365,9 @@ menuToggleButton.addEventListener('click', () => {
 });
 
 const updatePixelScale = () => {
-  const side = Math.max(1, Math.floor(Math.min(gameSquare.clientWidth, gameSquare.clientHeight)));
+  const viewportWidth = Math.max(1, Math.floor(gameSquare.clientWidth));
+  const viewportHeight = Math.max(1, Math.floor(gameSquare.clientHeight));
+  const side = Math.max(1, Math.floor(Math.min(viewportWidth, viewportHeight)));
   const pixelScale = Math.max(1, Math.floor(side / 320));
   const rootFontPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
   const rowRem = side / 24 / rootFontPx;
@@ -4370,6 +4375,10 @@ const updatePixelScale = () => {
   gameSquare.style.setProperty('--u', `${(pixelScale * settings.graphics.pixelScale) / rootFontPx}rem`);
   gameSquare.style.setProperty('--row', `${rowRem}rem`);
   gameSquare.style.setProperty('--text-size', `${textRem}rem`);
+
+  renderer.setSize(viewportWidth, viewportHeight, false);
+  camera.aspect = viewportWidth / viewportHeight;
+  camera.updateProjectionMatrix();
 };
 
 const resizeObserver = new ResizeObserver(() => {
