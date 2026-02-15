@@ -1115,6 +1115,7 @@ let worldClimbVolumes: ModuleVolume[] = [];
 let joinControlTargets: JoinControlTarget[] = [];
 const joinControlByObjectId = new Map<number, JoinControlTarget>();
 let pendingInsertContext: { joinIndex: number; levelOffset: number } | null = null;
+let pendingPointerRecaptureAfterInteractionMenu = false;
 
 const playerEyeHeightM = 1.68;
 const playerRadiusM = 0.22;
@@ -2520,9 +2521,12 @@ const resumeGame = () => {
   showToast('Game resumed');
 };
 
-const openMenu = (menuName: MenuName) => {
+const openMenu = (menuName: MenuName, options?: { recapturePointerOnClose?: boolean }) => {
   const menu = MENUS[menuName];
   if (!menu) return;
+  if (options?.recapturePointerOnClose) {
+    pendingPointerRecaptureAfterInteractionMenu = true;
+  }
   if (menu.isRoot) {
     menuStack.length = 0;
   }
@@ -2534,6 +2538,18 @@ const openMenu = (menuName: MenuName) => {
   renderCurrentMenu();
 };
 
+const requestPointerLockIfNeeded = () => {
+  if (document.pointerLockElement === renderer.domElement) {
+    return;
+  }
+  void renderer.domElement.requestPointerLock().catch((error: unknown) => {
+    if (error instanceof DOMException && error.name === 'SecurityError') {
+      return;
+    }
+    console.error(error);
+  });
+};
+
 const popMenu = () => {
   if (menuStack.length > 1) {
     menuStack.pop();
@@ -2542,6 +2558,9 @@ const popMenu = () => {
   }
   if (menuVisible && document.pointerLockElement === renderer.domElement) {
     document.exitPointerLock();
+  } else if (!menuVisible && pendingPointerRecaptureAfterInteractionMenu && !controlsListeningFor) {
+    pendingPointerRecaptureAfterInteractionMenu = false;
+    requestPointerLockIfNeeded();
   }
   renderCurrentMenu();
 };
@@ -2550,6 +2569,10 @@ const closeAllMenus = () => {
   menuStack.length = 0;
   menuVisible = false;
   stopListeningForBinding();
+  if (pendingPointerRecaptureAfterInteractionMenu && !controlsListeningFor) {
+    pendingPointerRecaptureAfterInteractionMenu = false;
+    requestPointerLockIfNeeded();
+  }
   renderCurrentMenu();
 };
 
@@ -2930,14 +2953,14 @@ const moduleInteractionHandlers: ModuleInteractionHandler[] = [
   {
     kind: 'captains-letter-paper',
     handleSelect: () => {
-      openMenu('captainsLetterMenu');
+      openMenu('captainsLetterMenu', { recapturePointerOnClose: true });
       showToast('Reading letter');
     }
   },
   {
     kind: 'battery-control-panel',
     handleSelect: () => {
-      openMenu('batteryControlMenu');
+      openMenu('batteryControlMenu', { recapturePointerOnClose: true });
       showToast('Battery controls');
     }
   }
@@ -2964,7 +2987,7 @@ renderer.domElement.addEventListener('click', (event) => {
   }
 
   if (document.pointerLockElement !== renderer.domElement) {
-    void renderer.domElement.requestPointerLock();
+    requestPointerLockIfNeeded();
     return;
   }
 
@@ -2972,7 +2995,7 @@ renderer.domElement.addEventListener('click', (event) => {
   if (target) {
     if (target.kind === 'insert') {
       pendingInsertContext = { joinIndex: target.joinIndex, levelOffset: target.levelOffset ?? 0 };
-      openMenu('insertModuleMenu');
+      openMenu('insertModuleMenu', { recapturePointerOnClose: true });
       return;
     }
     if (target.kind === 'remove-left') {
@@ -3932,6 +3955,7 @@ window.addEventListener('keydown', (event) => {
 
   if (event.key === 'Escape' && menuVisible) {
     event.preventDefault();
+    pendingPointerRecaptureAfterInteractionMenu = false;
     popMenu();
   }
 });
