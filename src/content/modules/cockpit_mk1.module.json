@@ -522,6 +522,213 @@
             1
           ]
         }
+      },
+      {
+        "id": "furn_wheel_pedestal_base",
+        "primitive": "box",
+        "role": "furniture-wheel-pedestal-base",
+        "center": [
+          0,
+          0.17,
+          -0.94
+        ],
+        "size": [
+          0.44,
+          0.18,
+          0.28
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_wheel_pedestal_column",
+        "primitive": "box",
+        "role": "furniture-wheel-pedestal-column",
+        "center": [
+          0,
+          0.71,
+          -1.04
+        ],
+        "size": [
+          0.12,
+          0.9,
+          0.12
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_wheel_hub",
+        "primitive": "box",
+        "role": "furniture-wheel-hub",
+        "center": [
+          0,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.14,
+          0.14,
+          0.1
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_wheel_rim_top",
+        "primitive": "box",
+        "role": "furniture-wheel-rim",
+        "center": [
+          0,
+          1.38,
+          -0.92
+        ],
+        "size": [
+          0.5,
+          0.06,
+          0.08
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_wheel_rim_bottom",
+        "primitive": "box",
+        "role": "furniture-wheel-rim",
+        "center": [
+          0,
+          0.88,
+          -0.92
+        ],
+        "size": [
+          0.5,
+          0.06,
+          0.08
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_wheel_rim_left",
+        "primitive": "box",
+        "role": "furniture-wheel-rim",
+        "center": [
+          -0.25,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.06,
+          0.5,
+          0.08
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_wheel_rim_right",
+        "primitive": "box",
+        "role": "furniture-wheel-rim",
+        "center": [
+          0.25,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.06,
+          0.5,
+          0.08
+        ],
+        "material": {
+          "tileId": "brass-panel-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_wheel_spoke_vertical",
+        "primitive": "box",
+        "role": "furniture-wheel-spoke",
+        "center": [
+          0,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.05,
+          0.44,
+          0.07
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
+      },
+      {
+        "id": "furn_wheel_spoke_horizontal",
+        "primitive": "box",
+        "role": "furniture-wheel-spoke",
+        "center": [
+          0,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.44,
+          0.05,
+          0.07
+        ],
+        "material": {
+          "tileId": "oak-joined-boards-256x256px",
+          "uvMode": "repeat",
+          "worldScaleM": [
+            1,
+            1
+          ]
+        }
       }
     ]
   },
@@ -813,6 +1020,141 @@
           1,
           0.035
         ]
+      },
+      {
+        "id": "blocked_furn_wheel_pedestal_base",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          0.17,
+          -0.94
+        ],
+        "size": [
+          0.44,
+          0.18,
+          0.28
+        ]
+      },
+      {
+        "id": "blocked_furn_wheel_pedestal_column",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          0.71,
+          -1.04
+        ],
+        "size": [
+          0.12,
+          0.9,
+          0.12
+        ]
+      },
+      {
+        "id": "blocked_furn_wheel_hub",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.14,
+          0.14,
+          0.1
+        ]
+      },
+      {
+        "id": "blocked_furn_wheel_rim_top",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          1.38,
+          -0.92
+        ],
+        "size": [
+          0.5,
+          0.06,
+          0.08
+        ]
+      },
+      {
+        "id": "blocked_furn_wheel_rim_bottom",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          0.88,
+          -0.92
+        ],
+        "size": [
+          0.5,
+          0.06,
+          0.08
+        ]
+      },
+      {
+        "id": "blocked_furn_wheel_rim_left",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          -0.25,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.06,
+          0.5,
+          0.08
+        ]
+      },
+      {
+        "id": "blocked_furn_wheel_rim_right",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0.25,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.06,
+          0.5,
+          0.08
+        ]
+      },
+      {
+        "id": "blocked_furn_wheel_spoke_vertical",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.05,
+          0.44,
+          0.07
+        ]
+      },
+      {
+        "id": "blocked_furn_wheel_spoke_horizontal",
+        "shape": "box",
+        "kind": "blocked",
+        "center": [
+          0,
+          1.13,
+          -0.92
+        ],
+        "size": [
+          0.44,
+          0.05,
+          0.07
+        ]
       }
     ],
     "climb": [],
@@ -1087,6 +1429,114 @@
       "mesh": "window_strip_right",
       "materialSlot": "albedo",
       "tileId": "glass-pane-256x256px-alpha",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_wheel_pedestal_base",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_wheel_pedestal_column",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_wheel_hub",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_wheel_rim_top",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_wheel_rim_bottom",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_wheel_rim_left",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_wheel_rim_right",
+      "materialSlot": "albedo",
+      "tileId": "brass-panel-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_wheel_spoke_vertical",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
+      "uvMode": "repeat",
+      "worldScaleM": [
+        1,
+        1
+      ],
+      "rotationDeg": 0,
+      "mirrorX": false
+    },
+    {
+      "mesh": "furn_wheel_spoke_horizontal",
+      "materialSlot": "albedo",
+      "tileId": "oak-joined-boards-256x256px",
       "uvMode": "repeat",
       "worldScaleM": [
         1,

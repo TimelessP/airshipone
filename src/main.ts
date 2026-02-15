@@ -106,6 +106,7 @@ interface SimulationState {
   shipLongitudeDeg: number;
   shipAltitudeAslM: number;
   shipLocalSolarTimeHours: number;
+  helmRudderDeg: number;
   planetRotationDeg: number;
   planetOrbitalAngleDeg: number;
   planetDistanceAu: number;
@@ -122,6 +123,7 @@ type SimulationEvent =
   | { type: 'power/toggle-solar-connect' }
   | { type: 'power/toggle-main-bus-connect' }
   | { type: 'battery/toggle-lights-main' }
+  | { type: 'helm/rudder-angle-report'; rudderDeg: number }
   | { type: 'ui/battery-menu-stats'; stats: BatteryMenuStats }
   | { type: 'power/main-bus-changed'; powered: boolean };
 
@@ -334,6 +336,7 @@ const defaultSimulation = (): SimulationState => ({
   shipLongitudeDeg: 0,
   shipAltitudeAslM: 2200,
   shipLocalSolarTimeHours: 12,
+  helmRudderDeg: 0,
   planetRotationDeg: 0,
   planetOrbitalAngleDeg: 0,
   planetDistanceAu: 1,
@@ -399,6 +402,10 @@ const simulationEventQueue: SimulationEvent[] = [];
 const SIM_TICK_HZ = 25;
 const SIM_TICK_SECONDS = 1 / SIM_TICK_HZ;
 const SIM_MAX_CATCHUP_STEPS = 5;
+const HELM_RUDDER_REPORT_INTERVAL_MS = 600;
+const HELM_WHEEL_MIN_DEG = -120;
+const HELM_WHEEL_MAX_DEG = 120;
+const HELM_WHEEL_DEG_PER_MOUSE_PX = 0.22;
 let simAccumulatorSeconds = 0;
 
 const ELECTRICAL_CONFIG = DEFAULT_ELECTRICAL_CONFIG;
@@ -442,6 +449,7 @@ const serializeBatteryMenuStats = (stats: BatteryMenuStats): string => {
 };
 
 let lastBatteryMenuStatsSignature = '';
+let lastHelmRudderReportAtMs = 0;
 
 const enqueueBatteryMenuStatsIfChanged = () => {
   const stats = getBatteryMenuStatsSnapshot();
@@ -484,6 +492,11 @@ const applySimulationEvent = (event: SimulationEvent) => {
     return;
   }
 
+  if (event.type === 'helm/rudder-angle-report') {
+    simulation.helmRudderDeg = clampNumber(event.rudderDeg, HELM_WHEEL_MIN_DEG, HELM_WHEEL_MAX_DEG);
+    return;
+  }
+
   if (event.type === 'battery/toggle-a-bus') {
     simulation.batteryAConnectedToBus = !simulation.batteryAConnectedToBus;
     enqueueBatteryMenuStatsIfChanged();
@@ -512,6 +525,18 @@ const applySimulationEvent = (event: SimulationEvent) => {
   setMainBusPowered(event.powered);
 };
 
+const enqueueHelmRudderReportIfDue = (nowMs: number, options?: { force?: boolean }) => {
+  const force = options?.force === true;
+  if (!force && nowMs - lastHelmRudderReportAtMs < HELM_RUDDER_REPORT_INTERVAL_MS) {
+    return;
+  }
+  lastHelmRudderReportAtMs = nowMs;
+  enqueueSimulationEvent({
+    type: 'helm/rudder-angle-report',
+    rudderDeg: clampNumber(simulation.helmRudderDeg, HELM_WHEEL_MIN_DEG, HELM_WHEEL_MAX_DEG)
+  });
+};
+
 const stepSimulationTick = (_nowMs: number) => {
   const utcNowMs = Date.now();
   simulation.tick += 1;
@@ -519,6 +544,7 @@ const stepSimulationTick = (_nowMs: number) => {
 
   const shipSolarState = getShipSolarState(utcNowMs);
   simulation.shipLocalSolarTimeHours = shipSolarState.localSolarTimeHours;
+  enqueueHelmRudderReportIfDue(utcNowMs);
 
   simulation.fuel = Math.max(0, simulation.fuel - SIM_TICK_SECONDS * 0.08);
 
@@ -1290,6 +1316,8 @@ const getMaterial = (block: ModuleBlock): THREE.MeshStandardMaterial => {
 const createModuleMesh = (moduleDoc: GeneratedModule): THREE.Group => {
   const group = new THREE.Group();
   group.name = moduleDoc.id;
+  const wheelRotatingParts: THREE.Mesh[] = [];
+  let wheelHubCenter: THREE.Vector3 | null = null;
 
   for (const block of moduleDoc.geometry.blocks) {
     const [centerX, centerY, centerZ] = getVector3(block.center, `block center (${moduleDoc.id}:${block.id})`);
@@ -1311,6 +1339,9 @@ const createModuleMesh = (moduleDoc: GeneratedModule): THREE.Group => {
     if (block.role === 'furniture-battery-control-panel') {
       mesh.userData.interactionKind = 'battery-control-panel';
     }
+    if (block.role.startsWith('furniture-wheel-')) {
+      mesh.userData.interactionKind = 'helm-wheel';
+    }
     if (block.role === 'ceiling-light') {
       mesh.userData.ceilingLightEmitter = true;
       if (material instanceof THREE.MeshStandardMaterial) {
@@ -1320,12 +1351,32 @@ const createModuleMesh = (moduleDoc: GeneratedModule): THREE.Group => {
     mesh.position.set(centerX, centerY, centerZ);
     group.add(mesh);
 
+    if (helmWheelRotatingMeshIds.has(block.id)) {
+      wheelRotatingParts.push(mesh);
+      if (block.id === 'furn_wheel_hub') {
+        wheelHubCenter = new THREE.Vector3(centerX, centerY, centerZ);
+      }
+    }
+
     if (block.role === 'ceiling-light') {
       const light = new THREE.PointLight(0xfff5c2, 1.35, 5.2, 1.1);
       light.position.set(centerX, centerY - 0.06, centerZ);
       light.userData.baseIntensity = 1.35;
       light.castShadow = false;
       group.add(light);
+    }
+  }
+
+  if (wheelHubCenter && wheelRotatingParts.length > 0) {
+    const wheelPivot = new THREE.Group();
+    wheelPivot.name = `${moduleDoc.id}:helm_wheel_pivot`;
+    wheelPivot.userData.helmWheelPivot = true;
+    wheelPivot.position.copy(wheelHubCenter);
+    group.add(wheelPivot);
+
+    for (const part of wheelRotatingParts) {
+      part.position.sub(wheelHubCenter);
+      wheelPivot.add(part);
     }
   }
 
@@ -1401,6 +1452,17 @@ let joinControlTargets: JoinControlTarget[] = [];
 const joinControlByObjectId = new Map<number, JoinControlTarget>();
 let pendingInsertContext: { joinIndex: number; levelOffset: number } | null = null;
 let pendingPointerRecaptureAfterInteractionMenu = false;
+let helmEngaged = false;
+const helmWheelRotatingMeshIds = new Set([
+  'furn_wheel_hub',
+  'furn_wheel_rim_top',
+  'furn_wheel_rim_bottom',
+  'furn_wheel_rim_left',
+  'furn_wheel_rim_right',
+  'furn_wheel_spoke_vertical',
+  'furn_wheel_spoke_horizontal'
+]);
+const helmWheelRotatingPivots: THREE.Object3D[] = [];
 
 const playerEyeHeightM = 1.68;
 const playerRadiusM = 0.22;
@@ -1448,6 +1510,26 @@ const ladderDeckLevelHeightM = 2.6;
 let ladderLevelOffsets: number[] = [];
 let floorModuleIdsByLevel: Record<string, string[]> = {
   '0': ['captains_cabin_mk1', 'radio_room_mk1']
+};
+
+const applyHelmWheelVisualRotation = () => {
+  const wheelRotationRad = simulation.helmRudderDeg * DEG_TO_RAD;
+  for (const pivot of helmWheelRotatingPivots) {
+    pivot.rotation.z = wheelRotationRad;
+  }
+};
+
+const setHelmEngaged = (engaged: boolean) => {
+  if (helmEngaged === engaged) {
+    return;
+  }
+  helmEngaged = engaged;
+  if (!engaged) {
+    enqueueHelmRudderReportIfDue(Date.now(), { force: true });
+    showToast('Helm released');
+    return;
+  }
+  showToast('Helm engaged');
 };
 
 const levelKey = (levelOffset: number): string => `${levelOffset}`;
@@ -1659,6 +1741,7 @@ const rebuildModuleAssembly = () => {
   worldClimbVolumes = [];
   joinControlTargets = [];
   interactableTargets = [];
+  helmWheelRotatingPivots.length = 0;
   ceilingLightPoints.length = 0;
   ceilingLightEmitterMeshes.length = 0;
   joinControlByObjectId.clear();
@@ -1798,6 +1881,9 @@ const rebuildModuleAssembly = () => {
         if (typeof child.userData.interactionKind === 'string') {
           interactableTargets.push(child);
         }
+        if (child.userData.helmWheelPivot === true) {
+          helmWheelRotatingPivots.push(child);
+        }
         if (child.userData.ceilingLightEmitter === true && child instanceof THREE.Mesh) {
           ceilingLightEmitterMeshes.push(child);
         }
@@ -1919,6 +2005,7 @@ const rebuildModuleAssembly = () => {
   }
 
   applyModuleLightingState(simulation.mainBusPowered);
+  applyHelmWheelVisualRotation();
 };
 
 const getContainingClimbVolume = (point: THREE.Vector3): ModuleVolume | null => {
@@ -2224,14 +2311,15 @@ const updateJoinControlVisibility = () => {
   if (controlsActive) {
     for (const interactTarget of interactableTargets) {
       interactTarget.getWorldPosition(paperInteractWorldPos);
-      if (paperInteractWorldPos.distanceTo(playerPosition) <= interactDistanceM) {
+      const distance = paperInteractWorldPos.distanceTo(playerPosition);
+      if (distance <= interactDistanceM) {
         nearClickableInteraction = true;
-        break;
       }
     }
   }
 
-  clickReticle.dataset.visible = (nearClickableJoinControl || nearClickableInteraction) && controlsActive && pointerLocked ? 'true' : 'false';
+  const shouldShowReticle = controlsActive && pointerLocked && (helmEngaged || nearClickableJoinControl || nearClickableInteraction);
+  clickReticle.dataset.visible = shouldShowReticle ? 'true' : 'false';
 };
 
 const syncPlayerCamera = () => {
@@ -3170,9 +3258,8 @@ const buildInsertModuleItems = (): MenuItem[] => {
 const joinControlRaycaster = new THREE.Raycaster();
 const joinControlNdc = new THREE.Vector2();
 
-const setInteractionRayFromEvent = (event: MouseEvent) => {
-  const isPointerLocked = document.pointerLockElement === renderer.domElement;
-  if (isPointerLocked) {
+const setInteractionRayFromEvent = (event?: MouseEvent) => {
+  if (!event || document.pointerLockElement === renderer.domElement) {
     joinControlNdc.set(0, 0);
   } else {
     const rect = renderer.domElement.getBoundingClientRect();
@@ -3184,7 +3271,7 @@ const setInteractionRayFromEvent = (event: MouseEvent) => {
   joinControlRaycaster.setFromCamera(joinControlNdc, camera);
 };
 
-const pickJoinControl = (event: MouseEvent): JoinControlTarget | null => {
+const pickJoinControl = (event?: MouseEvent): JoinControlTarget | null => {
   setInteractionRayFromEvent(event);
   const visibleControls = joinControlTargets
     .filter((target) => target.object.visible)
@@ -3204,7 +3291,7 @@ const pickJoinControl = (event: MouseEvent): JoinControlTarget | null => {
   return null;
 };
 
-const pickInteractableTarget = (event: MouseEvent): THREE.Object3D | null => {
+const pickInteractableTarget = (event?: MouseEvent): THREE.Object3D | null => {
   setInteractionRayFromEvent(event);
   const nearbyTargets = interactableTargets.filter((interactTarget) => {
     interactTarget.getWorldPosition(paperInteractWorldPos);
@@ -3238,6 +3325,12 @@ const moduleInteractionHandlers: ModuleInteractionHandler[] = [
       openMenu('batteryControlMenu', { recapturePointerOnClose: true });
       showToast('Battery controls');
     }
+  },
+  {
+    kind: 'helm-wheel',
+    handleSelect: () => {
+      setHelmEngaged(!helmEngaged);
+    }
   }
 ];
 
@@ -3256,14 +3349,19 @@ const activateInteractableTarget = (target: THREE.Object3D): boolean => {
   return true;
 };
 
-renderer.domElement.addEventListener('click', (event) => {
+const attemptWorldInteraction = (event?: MouseEvent): boolean => {
   if (menuVisible || controlsListeningFor) {
-    return;
+    return false;
   }
 
   if (document.pointerLockElement !== renderer.domElement) {
     requestPointerLockIfNeeded();
-    return;
+    return true;
+  }
+
+  if (helmEngaged) {
+    setHelmEngaged(false);
+    return true;
   }
 
   const target = pickJoinControl(event);
@@ -3271,44 +3369,60 @@ renderer.domElement.addEventListener('click', (event) => {
     if (target.kind === 'insert') {
       pendingInsertContext = { joinIndex: target.joinIndex, levelOffset: target.levelOffset ?? 0 };
       openMenu('insertModuleMenu', { recapturePointerOnClose: true });
-      return;
+      return true;
     }
     if (target.kind === 'remove-left') {
       removeModuleAtIndex(target.joinIndex, target.levelOffset ?? 0);
-      return;
+      return true;
     }
     if (target.kind === 'ladder-add-above') {
       const moduleIndex = target.moduleIndex ?? target.joinIndex;
       addLadderFloorAbove(moduleIndex, target.levelOffset ?? 0);
-      return;
+      return true;
     }
     if (target.kind === 'ladder-add-below') {
       const moduleIndex = target.moduleIndex ?? target.joinIndex;
       addLadderFloorBelow(moduleIndex, target.levelOffset ?? 0);
-      return;
+      return true;
     }
     if (target.kind === 'ladder-remove-above') {
       const moduleIndex = target.moduleIndex ?? target.joinIndex;
       removeLadderFloorAbove(moduleIndex, target.levelOffset ?? 0);
-      return;
+      return true;
     }
     if (target.kind === 'ladder-remove-below') {
       const moduleIndex = target.moduleIndex ?? target.joinIndex;
       removeLadderFloorBelow(moduleIndex, target.levelOffset ?? 0);
-      return;
+      return true;
     }
     removeModuleAtIndex(target.joinIndex + 1, target.levelOffset ?? 0);
-    return;
+    return true;
   }
 
   const interactTarget = pickInteractableTarget(event);
   if (interactTarget && activateInteractableTarget(interactTarget)) {
-    return;
+    return true;
   }
+
+  return false;
+};
+
+renderer.domElement.addEventListener('click', (event) => {
+  attemptWorldInteraction(event);
 });
 
 window.addEventListener('mousemove', (event) => {
   if (menuVisible || document.pointerLockElement !== renderer.domElement) {
+    return;
+  }
+
+  if (helmEngaged) {
+    simulation.helmRudderDeg = clampNumber(
+      simulation.helmRudderDeg - (event.movementX * HELM_WHEEL_DEG_PER_MOUSE_PX),
+      HELM_WHEEL_MIN_DEG,
+      HELM_WHEEL_MAX_DEG
+    );
+    applyHelmWheelVisualRotation();
     return;
   }
 
@@ -4294,6 +4408,8 @@ const loop = (now: number) => {
           popMenu();
         }
       }
+    } else if (!menuVisible && menuActionEdges.confirm) {
+      attemptWorldInteraction();
     }
   }
 
@@ -4323,10 +4439,16 @@ const loop = (now: number) => {
   ensurePlayerInValidSpace();
 
   if (!menuVisible && !controlsListeningFor) {
+    if (helmEngaged) {
+      if (menuActionEdges.back) {
+        setHelmEngaged(false);
+      }
+    }
+
     const forwardInput = (isActionPressed('up') ? 1 : 0) - (isActionPressed('down') ? 1 : 0);
     const strafeInput = (isActionPressed('left') ? 1 : 0) - (isActionPressed('right') ? 1 : 0);
 
-    if (activeClimbVolume) {
+    if (activeClimbVolume && !helmEngaged) {
       alignPlayerToClimbVolume(activeClimbVolume, delta);
 
       const detachRequested = menuActionEdges.back || menuActionEdges.down;
@@ -4377,7 +4499,7 @@ const loop = (now: number) => {
       if (activeClimbVolume) {
         alignPlayerToClimbVolume(activeClimbVolume, delta);
       }
-    } else if (forwardInput !== 0 || strafeInput !== 0) {
+    } else if (!helmEngaged && (forwardInput !== 0 || strafeInput !== 0)) {
       playerForward.set(Math.sin(playerYaw), 0, Math.cos(playerYaw));
       playerRight.set(Math.cos(playerYaw), 0, -Math.sin(playerYaw));
 

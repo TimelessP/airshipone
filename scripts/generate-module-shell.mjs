@@ -468,6 +468,99 @@ const addBatteryRoomFurnishings = ({ blocks, blocked, params, tiles, moduleLengt
   });
 };
 
+const addCockpitWheelFurnishings = ({ blocks, blocked, params, tiles, moduleLengthM }) => {
+  const roomFrontZ = -((moduleLengthM / 2) - params.wallOuterM);
+  const floorTopY = params.floorThicknessM;
+
+  const addFurniture = ({ id, role, center, size, tileId, addBlocked = true }) => {
+    blocks.push(makeBox(id, role, center, size, tileId));
+    if (addBlocked) {
+      blocked.push(makeVolumeBox(`blocked_${id}`, 'blocked', center, size));
+    }
+  };
+
+  const pedestalBaseHeight = 0.18;
+  const pedestalColumnHeight = 0.9;
+  const wheelRimThickness = 0.06;
+  const wheelRimWidth = 0.5;
+  const wheelRadius = wheelRimWidth / 2;
+  const pedestalColumnCenterZ = roomFrontZ + 0.46;
+  const wheelCenterY = floorTopY + pedestalBaseHeight + pedestalColumnHeight + 0.22 - wheelRadius;
+  const wheelCenterZ = pedestalColumnCenterZ + 0.12;
+
+  addFurniture({
+    id: 'furn_wheel_pedestal_base',
+    role: 'furniture-wheel-pedestal-base',
+    center: [0, floorTopY + (pedestalBaseHeight / 2), pedestalColumnCenterZ + 0.1],
+    size: [0.44, pedestalBaseHeight, 0.28],
+    tileId: tiles.wood
+  });
+
+  addFurniture({
+    id: 'furn_wheel_pedestal_column',
+    role: 'furniture-wheel-pedestal-column',
+    center: [0, floorTopY + pedestalBaseHeight + (pedestalColumnHeight / 2), pedestalColumnCenterZ],
+    size: [0.12, pedestalColumnHeight, 0.12],
+    tileId: tiles.trim
+  });
+
+  addFurniture({
+    id: 'furn_wheel_hub',
+    role: 'furniture-wheel-hub',
+    center: [0, wheelCenterY, wheelCenterZ],
+    size: [0.14, 0.14, 0.1],
+    tileId: tiles.trim
+  });
+
+  addFurniture({
+    id: 'furn_wheel_rim_top',
+    role: 'furniture-wheel-rim',
+    center: [0, wheelCenterY + (wheelRimWidth / 2), wheelCenterZ],
+    size: [wheelRimWidth, wheelRimThickness, 0.08],
+    tileId: tiles.trim
+  });
+
+  addFurniture({
+    id: 'furn_wheel_rim_bottom',
+    role: 'furniture-wheel-rim',
+    center: [0, wheelCenterY - (wheelRimWidth / 2), wheelCenterZ],
+    size: [wheelRimWidth, wheelRimThickness, 0.08],
+    tileId: tiles.trim
+  });
+
+  addFurniture({
+    id: 'furn_wheel_rim_left',
+    role: 'furniture-wheel-rim',
+    center: [-(wheelRimWidth / 2), wheelCenterY, wheelCenterZ],
+    size: [wheelRimThickness, wheelRimWidth, 0.08],
+    tileId: tiles.trim
+  });
+
+  addFurniture({
+    id: 'furn_wheel_rim_right',
+    role: 'furniture-wheel-rim',
+    center: [wheelRimWidth / 2, wheelCenterY, wheelCenterZ],
+    size: [wheelRimThickness, wheelRimWidth, 0.08],
+    tileId: tiles.trim
+  });
+
+  addFurniture({
+    id: 'furn_wheel_spoke_vertical',
+    role: 'furniture-wheel-spoke',
+    center: [0, wheelCenterY, wheelCenterZ],
+    size: [0.05, 0.44, 0.07],
+    tileId: tiles.wood
+  });
+
+  addFurniture({
+    id: 'furn_wheel_spoke_horizontal',
+    role: 'furniture-wheel-spoke',
+    center: [0, wheelCenterY, wheelCenterZ],
+    size: [0.44, 0.05, 0.07],
+    tileId: tiles.wood
+  });
+};
+
 const isLadderProfile = (profile) => profile.startsWith('ladder-room-');
 
 const getLadderProfileOpenings = (profile) => {
@@ -868,6 +961,16 @@ const buildGeometryAndVolumes = (params, tiles) => {
       tiles,
       moduleLengthM,
       interiorProfile
+    });
+  }
+
+  if (params.moduleType === 'cockpit') {
+    addCockpitWheelFurnishings({
+      blocks,
+      blocked,
+      params,
+      tiles,
+      moduleLengthM
     });
   }
 
