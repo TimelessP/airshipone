@@ -690,7 +690,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 canvasWrap.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111822);
+scene.background = null;
 
 const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
 camera.position.set(0, 2.9, 8.4);
@@ -716,6 +716,230 @@ scene.add(sunLight);
 scene.add(sunTarget);
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
 scene.add(ambientLight);
+
+interface DynamicSkyParameters {
+  domeRadiusM: number;
+  cloudCoverage: number;
+  cloudDensity: number;
+  cloudScale: number;
+  cloudSpeed: number;
+  zenithDay: number;
+  horizonDay: number;
+  zenithSunset: number;
+  horizonSunset: number;
+  zenithNight: number;
+  horizonNight: number;
+  sunColor: number;
+  cloudLightColor: number;
+  cloudShadowColor: number;
+}
+
+const dynamicSkyParams: DynamicSkyParameters = {
+  domeRadiusM: 900,
+  cloudCoverage: 0.56,
+  cloudDensity: 0.72,
+  cloudScale: 0.68,
+  cloudSpeed: 0.021,
+  zenithDay: 0x4f9de8,
+  horizonDay: 0xbfdaf4,
+  zenithSunset: 0x4e5db2,
+  horizonSunset: 0xff9a63,
+  zenithNight: 0x040915,
+  horizonNight: 0x13213a,
+  sunColor: 0xfff1d5,
+  cloudLightColor: 0xfaf6f0,
+  cloudShadowColor: 0x506075
+};
+
+const dynamicSkyUniforms = {
+  uSunDirection: { value: new THREE.Vector3(0, 1, 0) },
+  uTimeSec: { value: 0 },
+  uDaylight: { value: 1 },
+  uTwilight: { value: 0 },
+  uNight: { value: 0 },
+  uCloudCoverage: { value: dynamicSkyParams.cloudCoverage },
+  uCloudDensity: { value: dynamicSkyParams.cloudDensity },
+  uCloudScale: { value: dynamicSkyParams.cloudScale },
+  uCloudSpeed: { value: dynamicSkyParams.cloudSpeed },
+  uSunGlowIntensity: { value: 1 },
+  uCloudLightBoost: { value: 1 },
+  uZenithDay: { value: new THREE.Color(dynamicSkyParams.zenithDay) },
+  uHorizonDay: { value: new THREE.Color(dynamicSkyParams.horizonDay) },
+  uZenithSunset: { value: new THREE.Color(dynamicSkyParams.zenithSunset) },
+  uHorizonSunset: { value: new THREE.Color(dynamicSkyParams.horizonSunset) },
+  uZenithNight: { value: new THREE.Color(dynamicSkyParams.zenithNight) },
+  uHorizonNight: { value: new THREE.Color(dynamicSkyParams.horizonNight) },
+  uSunColor: { value: new THREE.Color(dynamicSkyParams.sunColor) },
+  uCloudLightColor: { value: new THREE.Color(dynamicSkyParams.cloudLightColor) },
+  uCloudShadowColor: { value: new THREE.Color(dynamicSkyParams.cloudShadowColor) }
+};
+
+const dynamicSkyMaterial = new THREE.ShaderMaterial({
+  uniforms: dynamicSkyUniforms,
+  side: THREE.BackSide,
+  depthWrite: false,
+  depthTest: false,
+  fog: false,
+  vertexShader: `
+    varying vec3 vViewDir;
+
+    void main() {
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vViewDir = normalize(worldPosition.xyz - cameraPosition);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      gl_Position.z = gl_Position.w;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vViewDir;
+
+    uniform vec3 uSunDirection;
+    uniform float uTimeSec;
+    uniform float uDaylight;
+    uniform float uTwilight;
+    uniform float uNight;
+    uniform float uCloudCoverage;
+    uniform float uCloudDensity;
+    uniform float uCloudScale;
+    uniform float uCloudSpeed;
+    uniform float uSunGlowIntensity;
+    uniform float uCloudLightBoost;
+
+    uniform vec3 uZenithDay;
+    uniform vec3 uHorizonDay;
+    uniform vec3 uZenithSunset;
+    uniform vec3 uHorizonSunset;
+    uniform vec3 uZenithNight;
+    uniform vec3 uHorizonNight;
+    uniform vec3 uSunColor;
+    uniform vec3 uCloudLightColor;
+    uniform vec3 uCloudShadowColor;
+
+    float hash31(vec3 p) {
+      p = fract(p * 0.1031);
+      p += dot(p, p.yzx + 33.33);
+      return fract((p.x + p.y) * p.z);
+    }
+
+    float noise3(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+
+      float n000 = hash31(i + vec3(0.0, 0.0, 0.0));
+      float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
+      float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
+      float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
+      float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
+      float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
+      float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
+      float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
+
+      float nx00 = mix(n000, n100, f.x);
+      float nx10 = mix(n010, n110, f.x);
+      float nx01 = mix(n001, n101, f.x);
+      float nx11 = mix(n011, n111, f.x);
+      float nxy0 = mix(nx00, nx10, f.y);
+      float nxy1 = mix(nx01, nx11, f.y);
+      return mix(nxy0, nxy1, f.z);
+    }
+
+    float fbm(vec3 p) {
+      float value = 0.0;
+      float amplitude = 0.5;
+      for (int i = 0; i < 5; i += 1) {
+        value += amplitude * noise3(p);
+        p = p * 2.03 + vec3(17.1, 9.2, 13.7);
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
+    float sampleCloudMask(vec3 dir) {
+      if (dir.y <= -0.02) {
+        return 0.0;
+      }
+
+      vec2 wind = vec2(uTimeSec * uCloudSpeed, uTimeSec * uCloudSpeed * 0.37);
+      float accumulation = 0.0;
+      float totalWeight = 0.0;
+
+      vec2 baseUv = dir.xz / max(0.08, dir.y * 0.55 + 0.28);
+      baseUv *= uCloudScale;
+      vec2 warpA = vec2(
+        fbm(vec3(baseUv * 0.95 + wind * 0.35, 3.1)),
+        fbm(vec3(baseUv * 0.95 - wind * 0.41, 8.7))
+      );
+      vec2 warpB = vec2(
+        fbm(vec3(baseUv * 1.8 + wind * 0.21, 14.9)),
+        fbm(vec3(baseUv * 1.8 - wind * 0.29, 20.4))
+      );
+      vec2 domainWarp = (warpA - 0.5) * 1.35 + (warpB - 0.5) * 0.45;
+
+      for (int layerIndex = 0; layerIndex < 5; layerIndex += 1) {
+        float layer = float(layerIndex) / 4.0;
+        float height = mix(0.28, 1.25, layer);
+        vec2 uv = dir.xz / max(0.10, dir.y * height + 0.20);
+        uv = uv * (uCloudScale * mix(0.55, 1.90, layer));
+        uv += domainWarp * mix(0.55, 1.1, layer);
+        uv += wind * mix(0.35, 1.20, layer);
+        vec3 samplePoint = vec3(uv, layer * 7.3 + uTimeSec * uCloudSpeed * 0.06);
+
+        float weight = mix(1.0, 0.42, layer);
+        accumulation += fbm(samplePoint) * weight;
+        totalWeight += weight;
+      }
+
+      float densityField = accumulation / max(totalWeight, 0.0001);
+      float threshold = mix(0.76, 0.26, clamp(uCloudCoverage, 0.0, 1.0));
+      float softness = mix(0.24, 0.12, clamp(uCloudDensity, 0.0, 1.0));
+      float baseMask = smoothstep(threshold - softness, threshold + softness, densityField);
+
+      float edgeNoise = fbm(vec3(baseUv * 3.7 + domainWarp * 0.85 + wind * 0.55, 29.0));
+      float edgeErosion = mix(0.26, 0.08, clamp(uCloudDensity, 0.0, 1.0));
+      float erodedMask = smoothstep(0.5 - edgeErosion, 0.5 + edgeErosion, baseMask - (edgeNoise - 0.5) * 0.34);
+
+      float puffNoise = fbm(vec3(baseUv * 6.1 - wind * 0.75, 41.3));
+      float puffMask = smoothstep(0.42, 0.76, puffNoise);
+      float mask = mix(erodedMask, erodedMask * (0.75 + puffMask * 0.45), 0.42);
+      float horizonFade = smoothstep(-0.02, 0.12, dir.y);
+      return clamp(mask * horizonFade, 0.0, 1.0);
+    }
+
+    void main() {
+      vec3 direction = normalize(vViewDir);
+      vec3 sunDirection = normalize(uSunDirection);
+      float upness = clamp(direction.y * 0.5 + 0.5, 0.0, 1.0);
+
+      vec3 dayGradient = mix(uHorizonDay, uZenithDay, pow(upness, 0.58));
+      vec3 sunsetGradient = mix(uHorizonSunset, uZenithSunset, pow(upness, 0.60));
+      vec3 nightGradient = mix(uHorizonNight, uZenithNight, pow(upness, 0.73));
+
+      vec3 skyColor = mix(nightGradient, dayGradient, clamp(uDaylight, 0.0, 1.0));
+      skyColor = mix(skyColor, sunsetGradient, clamp(uTwilight, 0.0, 1.0));
+      skyColor = mix(skyColor, nightGradient, clamp(uNight, 0.0, 1.0));
+
+      float sunDot = max(dot(direction, sunDirection), 0.0);
+      float sunCore = pow(sunDot, 900.0);
+      float sunHalo = pow(sunDot, 36.0);
+      skyColor += uSunColor * (sunCore + sunHalo * 0.35) * uSunGlowIntensity;
+
+      float cloudMask = sampleCloudMask(direction) * clamp(uCloudDensity, 0.0, 1.0);
+      float cloudSunInfluence = clamp(dot(sunDirection, vec3(direction.x, abs(direction.y), direction.z)) * 0.5 + 0.5, 0.0, 1.0);
+      vec3 cloudColor = mix(uCloudShadowColor, uCloudLightColor * uCloudLightBoost, cloudSunInfluence);
+      cloudColor = mix(cloudColor, skyColor, 0.15);
+      skyColor = mix(skyColor, cloudColor, cloudMask * 0.95);
+
+      gl_FragColor = vec4(skyColor, 1.0);
+    }
+  `
+});
+
+const dynamicSkyMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 128, 72), dynamicSkyMaterial);
+dynamicSkyMesh.scale.setScalar(dynamicSkyParams.domeRadiusM);
+dynamicSkyMesh.frustumCulled = false;
+dynamicSkyMesh.renderOrder = -1000;
+scene.add(dynamicSkyMesh);
 
 const DEG_TO_RAD = Math.PI / 180;
 const RAD_TO_DEG = 180 / Math.PI;
@@ -849,6 +1073,29 @@ const updateGlobalLightingFromUtc = (utcMs: number) => {
     0.63 + directSunFactor * 0.34,
     0.72 + directSunFactor * 0.24
   );
+
+  const dayBlend = clampNumber((elevationDeg + 5) / 20, 0, 1);
+  const nightBlend = clampNumber((-elevationDeg - 3) / 16, 0, 1);
+  const twilightBlend = clampNumber(1 - Math.abs(elevationDeg) / 14, 0, 1) * (1 - nightBlend * 0.5);
+  const evolvingCoverage = clampNumber(
+    dynamicSkyParams.cloudCoverage +
+    Math.sin(utcMs * 0.000017) * 0.10 +
+    Math.sin((utcMs * 0.0000063) + 1.3) * 0.07,
+    0,
+    1
+  );
+
+  dynamicSkyUniforms.uSunDirection.value.copy(sunDirection);
+  dynamicSkyUniforms.uTimeSec.value = utcMs * 0.001;
+  dynamicSkyUniforms.uDaylight.value = dayBlend;
+  dynamicSkyUniforms.uTwilight.value = twilightBlend;
+  dynamicSkyUniforms.uNight.value = nightBlend;
+  dynamicSkyUniforms.uCloudCoverage.value = evolvingCoverage;
+  dynamicSkyUniforms.uCloudDensity.value = dynamicSkyParams.cloudDensity;
+  dynamicSkyUniforms.uCloudScale.value = dynamicSkyParams.cloudScale;
+  dynamicSkyUniforms.uCloudSpeed.value = dynamicSkyParams.cloudSpeed;
+  dynamicSkyUniforms.uSunGlowIntensity.value = 0.2 + directSunFactor * 1.45;
+  dynamicSkyUniforms.uCloudLightBoost.value = 0.45 + directSunFactor * 0.9;
 };
 
 const tileImages = import.meta.glob('../assets/textures/tiles/*.png', {
@@ -1964,6 +2211,7 @@ const syncPlayerCamera = () => {
     Math.cos(playerYaw) * Math.cos(playerPitch)
   );
   camera.position.copy(playerPosition);
+  dynamicSkyMesh.position.copy(camera.position);
   playerLookTarget.copy(playerPosition).add(playerLook);
   camera.lookAt(playerLookTarget);
 };
@@ -2065,10 +2313,7 @@ const resolveTheme = (mode: ThemeMode): ResolvedTheme => {
 };
 
 const applySceneTheme = () => {
-  const surfaceAlt = getComputedStyle(document.documentElement).getPropertyValue('--surface-alt').trim();
-  if (surfaceAlt) {
-    scene.background = new THREE.Color(surfaceAlt);
-  }
+  scene.background = null;
 };
 
 const updateStatusFromSimulation = () => {

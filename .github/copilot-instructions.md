@@ -30,6 +30,8 @@ These instructions are for AI coding agents working in this repository.
 - Floor/module ownership now uses strict explicit level state helpers in `src/main.ts` with no implicit cross-floor module fallback.
 - First 3D proximity interactable now exists: the captain's desk A4 paper opens a root-level unified menu letter view with a custom `letter` menu item renderer.
 - Global scene lighting now follows UTC-driven sun + ambient calculations using observer latitude/longitude and planet parameters (rotation/orbital angle/tilt/distance).
+- Runtime now includes a parameterized procedural dynamic sky dome (day/sunset/night gradients + sun-centered coloration + evolving contiguous cloud coverage) synced to UTC sun direction.
+- Interaction-opened menus (module insert, captain's paper, battery panel) now default to pointer recapture on close; explicit `Escape` release must cancel pending recapture.
 - Tile textures are preloaded before first module/material creation to prevent Three.js `Texture marked for update but no image data found` warnings.
 - GitHub Pages base-path-safe asset references are required for menu/static media (e.g., BMAC image uses `import.meta.env.BASE_URL`).
 - GitHub Actions Pages workflow scaffold exists (`.github/workflows/build-and-deploy.yml`) using the IdleGames-proven build/upload/deploy pattern.
@@ -142,6 +144,14 @@ Never allow terrain harvesting workload to starve simulation updates.
 - Use unified menu patterns from roadmap direction.
 - Keep menus/dialogs accessible as real DOM (focusable, keyboard navigable).
 - Preserve pixel aesthetic via scale tokens (do not hardcode random per-component stroke widths).
+- Pointer-lock semantics are strict: explicit user `Escape` intent to free cursor must not be overridden by delayed auto-recapture.
+
+## Known Runtime Pitfalls
+
+- Ladder level-anchor fallback must compare against level standing eye height (`level * deckHeight + playerEyeHeight`), not deck base Y, otherwise floor add/remove can shift anchor selection and teleport player Z.
+- Ladder climb floor-min clamp must be level-relative for lowest/negative levels; using global eye-height causes snap-back when descending to new lower floors.
+- Pointer-lock requests can reject with `SecurityError` during unlock races; request paths must handle expected rejection explicitly instead of leaving uncaught promise noise.
+- Procedural clouds look artificial when thresholding is too hard; maintain domain warping + edge erosion and sufficient sky dome tessellation to avoid “vector cutout” silhouettes.
 
 ## Legacy Translation Rules
 

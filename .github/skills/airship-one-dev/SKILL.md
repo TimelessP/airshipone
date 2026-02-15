@@ -28,6 +28,7 @@ Keep contributors aligned on:
 - Module generation model: parameterized generator profiles for generic module types and exact module variants (`--interior-profile auto|none|captains-cabin`).
 - Module runtime registry model: one handler file per module template under `src/modules/handlers/*.ts`, with `src/modules/registry.ts` as the single wiring point for fixed modules, insertable modules, and capability metadata (e.g., battery supply).
 - Lighting model (current scaffold): UTC-driven global sun + ambient from observer lat/lon and planet parameters.
+- Sky model (current scaffold): parameterized procedural sky dome (day/sunset/night gradients, sun-centered tinting, contiguous evolving cloud coverage).
 - Generated version artifacts:
   - `public/version.js` (local/dev fallback and build-time overwrite),
   - `dist/version.js` (must match deployed build version).
@@ -69,6 +70,8 @@ Keep contributors aligned on:
 - Never resolve missing floor module arrays by inheriting from another floor; missing level state is a defect and should throw.
 - Keep ladder shaft alignment stable across levels by preserving a shared ladder center Z when floor layouts are rebuilt.
 - Compute movement/collision bounds from actual rendered placement extents, not assumptions tied to only one active floor.
+- When selecting active level fallback, compare player eye Y against level standing-eye heights, not deck base Y.
+- Ladder climb min-Y clamps must be level-relative for lowest/negative levels to avoid descend snap-back.
 
 ## Module Type Extension Rules
 
@@ -82,6 +85,7 @@ Keep contributors aligned on:
 - Preserve 320x320 logical rendering concept.
 - Keep menu/dialog UI as accessible DOM overlays.
 - Use pixel-style scale tokens; avoid random per-component hardcoded styling.
+- Interaction-triggered menu close may request pointer recapture, but explicit user `Escape` to free cursor must always cancel pending recapture.
 
 ### Known Early Pitfall: Growing Canvas/Square in Dev
 
@@ -97,6 +101,27 @@ If you see `THREE.WebGLRenderer: Texture marked for update but no image data fou
 - Ensure tile textures are preloaded before creating module meshes/materials.
 - Avoid cloning repeat-variant textures before the source image is loaded.
 - Centralize texture configuration (wrap, color space, anisotropy) for both preload and fallback load paths.
+
+### Known Early Pitfall: Ladder Floor Teleport/Snap Bugs
+
+If floor add/remove or descend behavior causes apparent teleports:
+- Verify level-anchor fallback uses standing-eye height (`level * deckHeight + eyeHeight`).
+- Verify climb volume floor clamp uses level-relative eye-height when no lower floor exists.
+- Avoid index-based remapping assumptions across multi-floor rebuilds unless index domain is level-scoped and stable.
+
+### Known Early Pitfall: Pointer Lock Races During Menu Close
+
+If console logs `SecurityError` after click/close transitions:
+- Expect pointer-lock request races during unlock and handle `requestPointerLock()` promise rejection for known unlock races.
+- Keep a single helper for pointer-lock requests so `SecurityError` handling is consistent.
+- Ensure `Escape` intent cancels pending recapture semantics.
+
+### Known Early Pitfall: Procedural Clouds Look “Vector-Like”
+
+If sky clouds look like hard cutout shapes:
+- Add domain warping before primary cloud density sampling.
+- Use edge erosion/detail noise instead of a single hard threshold.
+- Keep sky dome tessellation high enough for smooth directional interpolation with high-frequency cloud fields.
 
 ## Pre-Commit / Pre-Handoff Checklist
 

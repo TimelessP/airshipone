@@ -223,6 +223,7 @@ Create a single-player airship simulator that is technically robust, mathematica
 
 ### 2.2 Three.js Scene Foundation
 - [x] Initialize renderer, scene, camera(s), and lighting baseline
+- [x] Add parameterized procedural sky dome synced to UTC sun direction (day/sunset/night gradients + contiguous evolving cloud field)
 - [ ] Define world scene and cabin scene boundaries
 - [ ] Add camera controller abstraction (external flight view + interior view)
 
@@ -332,6 +333,7 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [~] Add interaction targeting for station hotspots
   - [x] First proximity-gated hotspot interaction implemented: captain's desk A4 paper opens unified letter menu
   - [x] Battery room control panel hotspot opens root-level battery control menu
+  - [x] Interaction-opened menus now recapture pointer lock on close by default, while explicit `Escape` keeps cursor released
 - [ ] Add context prompts for interactable stations
 
 ### 4.3 Station Anchors
