@@ -686,6 +686,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(320, 320, false);
 renderer.setPixelRatio(1);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 canvasWrap.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -697,6 +698,17 @@ camera.lookAt(0, 1.2, 0);
 
 const sunLight = new THREE.DirectionalLight(0xffffff, 1);
 sunLight.position.set(3, 2, 4);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(1536, 1536);
+sunLight.shadow.radius = 1.6;
+sunLight.shadow.bias = -0.0002;
+sunLight.shadow.normalBias = 0.02;
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 120;
+sunLight.shadow.camera.left = -10;
+sunLight.shadow.camera.right = 10;
+sunLight.shadow.camera.top = 8;
+sunLight.shadow.camera.bottom = -8;
 const sunTarget = new THREE.Object3D();
 sunTarget.position.set(0, 0, 0);
 sunLight.target = sunTarget;
@@ -796,21 +808,46 @@ const updateGlobalLightingFromUtc = (utcMs: number) => {
     -Math.cos(azimuthRad) * Math.cos(elevationRad)
   ).normalize();
 
-  const distanceScale = 12;
-  sunLight.position.copy(sunDirection).multiplyScalar(distanceScale);
-  sunTarget.position.set(0, 0, 0);
+  const interiorCenterX = (interiorMinX + interiorMaxX) * 0.5;
+  const interiorCenterZ = (interiorMinZ + interiorMaxZ) * 0.5;
+  const shadowTarget = new THREE.Vector3(interiorCenterX, playerPosition.y - playerEyeHeightM + 1.15, interiorCenterZ);
+  const distanceScale = 40;
+  sunTarget.position.copy(shadowTarget);
+  sunLight.position.copy(shadowTarget).addScaledVector(sunDirection, distanceScale);
+
+  const cameraToFloorDistance = Math.max(1, Math.abs(camera.position.y - shadowTarget.y));
+  const viewHalfHeightAtFloor = Math.tan((camera.fov * DEG_TO_RAD) / 2) * cameraToFloorDistance;
+  const viewHalfWidthAtFloor = viewHalfHeightAtFloor * Math.max(1, camera.aspect);
+  const interiorHalfWidth = Math.max(2.5, (interiorMaxX - interiorMinX) * 0.5 + 1.8);
+  const interiorHalfDepth = Math.max(4.5, (interiorMaxZ - interiorMinZ) * 0.5 + 2.4);
+  const interiorRadius = Math.hypot(interiorHalfWidth, interiorHalfDepth);
+  const visibleRadius = Math.hypot(viewHalfWidthAtFloor + 6.0, viewHalfHeightAtFloor + 14.0);
+  const shadowRadius = Math.max(interiorRadius, visibleRadius);
+  sunLight.shadow.camera.left = -shadowRadius;
+  sunLight.shadow.camera.right = shadowRadius;
+  sunLight.shadow.camera.top = shadowRadius;
+  sunLight.shadow.camera.bottom = -shadowRadius;
+  sunLight.shadow.camera.near = 0.5;
+  sunLight.shadow.camera.far = Math.max(180, distanceScale + (shadowRadius * 2.4));
+  sunLight.shadow.camera.updateProjectionMatrix();
 
   const distanceFactor = 1 / Math.max(0.25, simulation.planetDistanceAu) ** 2;
-  const dayFactor = clampNumber((elevationDeg + 8) / 68, 0, 1);
-  sunLight.intensity = distanceFactor * (0.02 + dayFactor * 1.15);
-  ambientLight.intensity = distanceFactor * (0.06 + dayFactor * 0.32);
+  const sunAboveFactor = clampNumber(Math.sin(Math.max(0, elevationRad)), 0, 1);
+  const belowHorizonTaper = elevationDeg >= 0
+    ? 1
+    : clampNumber(1 - ((-elevationDeg) / 4.5), 0, 1);
+  const twilightTail = elevationDeg < 0 ? 0.06 * belowHorizonTaper : 0;
+  const directSunFactor = (sunAboveFactor * belowHorizonTaper) + twilightTail;
+  sunLight.intensity = distanceFactor * directSunFactor * 2.45;
+  ambientLight.intensity = distanceFactor * (0.03 + directSunFactor * 0.31);
+  sunLight.castShadow = directSunFactor > 0.015;
 
-  const warmFactor = clampNumber((18 - elevationDeg) / 30, 0, 1);
-  sunLight.color.setRGB(1, 1 - warmFactor * 0.18, 1 - warmFactor * 0.38);
+  const warmFactor = clampNumber((9 - elevationDeg) / 14, 0, 1);
+  sunLight.color.setRGB(1, 1 - warmFactor * 0.28, 1 - warmFactor * 0.58);
   ambientLight.color.setRGB(
-    0.72 + dayFactor * 0.28,
-    0.75 + dayFactor * 0.25,
-    0.84 + dayFactor * 0.16
+    0.60 + directSunFactor * 0.36,
+    0.63 + directSunFactor * 0.34,
+    0.72 + directSunFactor * 0.24
   );
 };
 
@@ -979,6 +1016,9 @@ const createModuleMesh = (moduleDoc: GeneratedModule): THREE.Group => {
       : new THREE.CylinderGeometry(block.radiusTop, block.radiusBottom, block.height, block.radialSegments);
     const material = getMaterial(block);
     const mesh = new THREE.Mesh(geometry, material);
+    const isWindow = block.role.includes('window');
+    mesh.receiveShadow = !isWindow;
+    mesh.castShadow = !isWindow;
     mesh.name = `${moduleDoc.id}:${block.id}`;
     if (block.role === 'furniture-paper-a4') {
       mesh.userData.interactionKind = 'captains-letter-paper';
@@ -1178,8 +1218,8 @@ const getActiveLevelOffset = (): number => {
   let best = levels[0] ?? 0;
   let bestDistance = Number.POSITIVE_INFINITY;
   for (const level of levels) {
-    const levelY = level * ladderDeckLevelHeightM;
-    const distance = Math.abs(playerPosition.y - levelY);
+    const standingEyeY = (level * ladderDeckLevelHeightM) + playerEyeHeightM;
+    const distance = Math.abs(playerPosition.y - standingEyeY);
     if (distance < bestDistance) {
       bestDistance = distance;
       best = level;
@@ -1672,7 +1712,8 @@ const alignPlayerToClimbVolume = (volume: ModuleVolume, deltaSeconds: number) =>
   const halfY = sy / 2;
   const levelOffset = getClimbVolumeLevelOffset(volume);
   const hasBelow = levelOffset !== null ? ladderLevelOffsets.includes(levelOffset - 1) : false;
-  const minY = Math.max(cy - halfY + 0.05, hasBelow ? -Infinity : playerEyeHeightM);
+  const levelStandingEyeY = ((levelOffset ?? 0) * ladderDeckLevelHeightM) + playerEyeHeightM;
+  const minY = Math.max(cy - halfY + 0.05, hasBelow ? -Infinity : levelStandingEyeY);
   const maxY = cy + halfY - 0.05;
 
   const targetX = cx + clamp(activeClimbOffsetX, -((sx / 2) - 0.03), (sx / 2) - 0.03);
@@ -2645,6 +2686,10 @@ const mapModuleIndexAfterTopologyMutation = (oldIndex: number, mutation: Topolog
       return null;
     }
     return oldIndex > mutation.index ? oldIndex - 1 : oldIndex;
+  }
+
+  if (mutation.kind === 'ladder-level') {
+    return null;
   }
 
   return oldIndex;
