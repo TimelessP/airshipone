@@ -26,10 +26,14 @@ Keep contributors aligned on:
 - Save model (current scaffold): browser `localStorage` envelope including settings + local simulation, with JSON export/import roundtrip and persisted player pose (`position`, `yaw`, `pitch`).
 - Ship-state model (current scaffold): authoritative geo-time fields in simulation (`shipLatitudeDeg`, `shipLongitudeDeg`, `shipAltitudeAslM`, `shipLocalSolarTimeHours`) updated from real UTC.
 - Controls model (current scaffold): dual bindings (keyboard + gamepad button/axis) with HID-safe rebind capture baseline.
+- Input helper model (current scaffold): shared action-edge, pressed-state, gamepad lookup, and binding-label helpers are centralized in `src/core/input.ts`.
 - Module generation model: parameterized generator profiles for generic module types and exact module variants (`--interior-profile auto|none|captains-cabin`).
 - Module runtime registry model: one handler file per module template under `src/modules/handlers/*.ts`, with `src/modules/registry.ts` as the single wiring point for fixed modules, insertable modules, and capability metadata (e.g., battery supply).
 - Lighting model (current scaffold): UTC-driven global sun + ambient derived from authoritative ship geo-time state (lat/lon/ASL + UTC) and planet parameters.
+- Lighting helper model (current scaffold): solar-state and solar-charge-effectiveness calculations are centralized in `src/render/lighting.ts`.
 - Electrical model (current scaffold): effective battery capacity and percent drain/charge rates scale with installed battery-supply module count across all active ladder floors.
+- Battery control menu model (current scaffold): queue-driven in-place live bindings are visibility/throttle gated, and runtime display uses staged tail labeling (`A+B ... then B +tail`).
+- Menu module model (current scaffold): menu definition factory and row renderers are extracted to `src/ui/menu-definitions.ts` and `src/ui/menu-render.ts`, with `src/main.ts` retaining menu orchestration and event wiring.
 - Sky model (current scaffold): parameterized procedural sky dome (day/sunset/night gradients, sun-centered tinting, contiguous evolving cloud coverage).
 - Generated version artifacts:
   - `public/version.js` (local/dev fallback and build-time overwrite),

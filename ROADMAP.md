@@ -160,12 +160,16 @@ Create a single-player airship simulator that is technically robust, mathematica
 ## Phase 1 — Architecture Skeleton (Modular ECS + Event Queue)
 
 ### 1.1 Folder Topology
-- [ ] `src/core/` (app bootstrap, game loop, timing)
+- [~] `src/core/` (app bootstrap, game loop, timing)
+  - [x] Input helper extraction started (`src/core/input.ts`)
 - [ ] `src/ecs/` (entity/component/system primitives)
 - [ ] `src/events/` (typed events, queue, dispatcher)
-- [ ] `src/sim/` (domain systems: nav, power, fuel, cargo, crew)
-- [ ] `src/render/` (three.js world, cabin, post-scale)
-- [ ] `src/ui/` (DOM overlays, unified menus, input mapping)
+- [~] `src/sim/` (domain systems: nav, power, fuel, cargo, crew)
+  - [x] Electrical domain module in place (`src/sim/electrical.ts`)
+- [~] `src/render/` (three.js world, cabin, post-scale)
+  - [x] Solar/lighting helper extraction started (`src/render/lighting.ts`)
+- [~] `src/ui/` (DOM overlays, unified menus, input mapping)
+  - [x] Battery menu + menu definitions/render helpers extracted (`src/ui/battery-menu.ts`, `src/ui/menu-definitions.ts`, `src/ui/menu-render.ts`)
 - [ ] `src/content/` (books, static tables, definitions)
 - [ ] `src/save/` (serialization, migration, slots)
 - [ ] `src/math/` (geodesy, spherical ops, utility)
@@ -399,6 +403,8 @@ Create a single-player airship simulator that is technically robust, mathematica
 - [x] Setting rows with inline actions
 - [x] Action rows with danger/disabled states
 - [x] Divider and section rows
+- [x] Queue-driven live telemetry rows for battery control menu (in-place updates, no DOM rebuild)
+- [x] Battery control menu runtime row with staged battery tail labeling (`A+B ... then B +tail`)
 - [ ] Table rows with per-cell action buttons
 - [~] Specialized feed/log rows (for social/comms-style content)
   - [x] Custom non-standard row implemented: structured `letter` item renderer for captains-letter menu

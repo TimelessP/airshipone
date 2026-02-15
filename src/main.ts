@@ -17,10 +17,42 @@ import { registerServiceWorker } from './pwa/register-sw';
 import {
   DEFAULT_ELECTRICAL_CONFIG,
   computeMainBusPowered as computeMainBusPoweredForState,
-  estimateBatteryRuntime,
   getElectricalTelemetry as getElectricalTelemetryForState,
   stepElectricalTick
 } from './sim/electrical';
+import {
+  buildBatteryRuntimeEstimateLabel,
+  formatBatteryPercent,
+  getBatteryMenuLiveValueText,
+  serializeBatteryMenuStats,
+  type BatteryLiveValueKey,
+  type BatteryMenuStats
+} from './ui/battery-menu';
+import {
+  formatBindingName,
+  getActionEdges,
+  getConnectedGamepad,
+  getMenuActionState,
+  isActionPressed,
+  type ActionState,
+  type InputAction,
+  type InputBinding,
+  type InputGamepadAxisBinding,
+  type InputGamepadButtonBinding,
+  type InputBindingMap
+} from './core/input';
+import {
+  getShipSolarState,
+  getSolarChargeEffectiveness
+} from './render/lighting';
+import { createMenuDefinitions } from './ui/menu-definitions';
+import {
+  renderControlItem,
+  renderImageLinkItem,
+  renderLetterItem,
+  renderSettingItem,
+  renderTextItem
+} from './ui/menu-render';
 
 type ThemeMode = 'system' | 'light' | 'dark';
 type ResolvedTheme = 'light' | 'dark';
@@ -37,7 +69,7 @@ type MenuName =
   | 'captainsLetterMenu'
   | 'batteryControlMenu';
 type MenuBehavior = 'submenu' | 'back' | 'close' | 'keep-open' | 'action';
-type ControlAction = 'left' | 'right' | 'up' | 'down' | 'confirm' | 'back' | 'pause';
+type ControlAction = InputAction;
 
 interface GraphicsSettings {
   pixelScale: number;
@@ -56,20 +88,8 @@ interface AdvancedSettings {
   diagnostics: boolean;
 }
 
-interface GamepadButtonBinding {
-  type: 'button';
-  btn: number;
-}
-
-interface GamepadAxisBinding {
-  type: 'axis';
-  axis: number;
-  dir: -1 | 1;
-}
-
-type ControlBinding = string | GamepadButtonBinding | GamepadAxisBinding | null;
-type DualBinding = [ControlBinding, ControlBinding];
-type ControlMap = Record<ControlAction, DualBinding>;
+type ControlBinding = InputBinding;
+type ControlMap = InputBindingMap;
 
 interface ControlsSettings {
   bindings: ControlMap;
@@ -128,36 +148,6 @@ type SimulationEvent =
   | { type: 'ui/battery-menu-stats'; stats: BatteryMenuStats }
   | { type: 'power/main-bus-changed'; powered: boolean };
 
-type LiveValueBindingKey =
-  | 'main-bus-connect'
-  | 'solar-connect'
-  | 'battery-a-connect'
-  | 'battery-b-connect'
-  | 'lights-main'
-  | 'battery-a-charge'
-  | 'battery-b-charge'
-  | 'solar-effectiveness'
-  | 'solar-charge-current'
-  | 'load-current'
-  | 'net-battery-current'
-  | 'battery-runtime';
-
-interface BatteryMenuStats {
-  mainBusConnected: boolean;
-  solarPanelsConnected: boolean;
-  batteryAConnectedToBus: boolean;
-  batteryBConnectedToBus: boolean;
-  lightsMainOn: boolean;
-  batteryACharge: number;
-  batteryBCharge: number;
-  solarEffectiveness: number;
-  solarChargeCurrentA: number;
-  loadCurrentA: number;
-  netBatteryCurrentA: number;
-  batterySupplyModuleCount: number;
-  batteryRuntimeEstimate: string;
-}
-
 interface SaveEnvelope {
   v: 1;
   app: 'airshipone';
@@ -169,22 +159,6 @@ interface SaveEnvelope {
 
 interface MenuStackEntry {
   menuName: MenuName;
-}
-
-interface MenuDefinition {
-  isRoot: boolean;
-  title: string;
-  overview: string;
-  itemBuilder?: () => MenuItem[];
-  actions?: MenuAction[];
-}
-
-interface MenuAction {
-  label: string;
-  behavior: Exclude<MenuBehavior, 'action'>;
-  target?: MenuName;
-  onSelect?: () => void;
-  danger?: boolean;
 }
 
 interface ActionMenuItem {
@@ -208,7 +182,7 @@ interface SettingMenuItem {
   type: 'setting';
   label: string;
   value: string;
-  liveValueKey?: LiveValueBindingKey;
+  liveValueKey?: BatteryLiveValueKey;
   actions: SettingAction[];
 }
 
@@ -224,7 +198,7 @@ interface TextMenuItem {
   type: 'text';
   label: string;
   value: string;
-  liveValueKey?: LiveValueBindingKey;
+  liveValueKey?: BatteryLiveValueKey;
   href?: string;
 }
 
@@ -263,8 +237,6 @@ interface ControlsListeningState {
   ignoreKeyCode: string | null;
   ignoreKeyUntil: number;
 }
-
-type ActionState = Record<ControlAction, boolean>;
 
 const app = document.getElementById('app');
 if (!app) {
@@ -415,93 +387,6 @@ let simAccumulatorSeconds = 0;
 
 const ELECTRICAL_CONFIG = DEFAULT_ELECTRICAL_CONFIG;
 
-const formatBatteryPercent = (value: number): string => {
-  if (value < 1) {
-    return `${value.toFixed(2)}%`;
-  }
-  return `${value.toFixed(1)}%`;
-};
-
-const formatRuntimeDuration = (hours: number): string => {
-  if (!Number.isFinite(hours) || hours <= 0) {
-    return '0m';
-  }
-
-  const totalMinutes = Math.max(1, Math.round(hours * 60));
-  const days = Math.floor(totalMinutes / (24 * 60));
-  const hoursPart = Math.floor((totalMinutes % (24 * 60)) / 60);
-  const minutesPart = totalMinutes % 60;
-
-  if (days > 0) {
-    return `${days}d ${hoursPart}h`;
-  }
-  if (hoursPart > 0) {
-    return `${hoursPart}h ${minutesPart}m`;
-  }
-  return `${minutesPart}m`;
-};
-
-const buildBatteryRuntimeEstimateLabel = (stats: {
-  batterySupplyModuleCount: number;
-  solarEffectiveness: number;
-  loadCurrentA: number;
-  netBatteryCurrentA: number;
-}): string => {
-  if (stats.batterySupplyModuleCount <= 0) {
-    return 'N/A (no battery modules)';
-  }
-
-  const hasConnectedChargedBattery =
-    (simulation.batteryAConnectedToBus && simulation.batteryACharge > 0.001) ||
-    (simulation.batteryBConnectedToBus && simulation.batteryBCharge > 0.001);
-  if (!hasConnectedChargedBattery) {
-    return 'N/A (no connected charged battery)';
-  }
-
-  if (stats.loadCurrentA <= 0) {
-    return 'No active battery draw';
-  }
-
-  if (stats.netBatteryCurrentA >= 0) {
-    return 'Holding/charging at current solar input';
-  }
-
-  const estimate = estimateBatteryRuntime(
-    {
-      batteryACharge: simulation.batteryACharge,
-      batteryBCharge: simulation.batteryBCharge,
-      batteryAConnectedToBus: simulation.batteryAConnectedToBus,
-      batteryBConnectedToBus: simulation.batteryBConnectedToBus,
-      solarPanelsConnected: simulation.solarPanelsConnected,
-      mainBusConnected: simulation.mainBusConnected,
-      lightsMainOn: simulation.lightsMainOn
-    },
-    {
-      batterySupplyModuleCount: stats.batterySupplyModuleCount,
-      solarEffectiveness: stats.solarEffectiveness
-    },
-    ELECTRICAL_CONFIG
-  );
-
-  if (!estimate) {
-    return 'Estimate unavailable';
-  }
-
-  if (estimate.stageSharedHours > 0 && estimate.stageTrailingHours > 0 && estimate.trailingBattery) {
-    return `A+B ${formatRuntimeDuration(estimate.stageSharedHours)} then ${estimate.trailingBattery} +${formatRuntimeDuration(estimate.stageTrailingHours)} (total ${formatRuntimeDuration(estimate.totalHours)})`;
-  }
-
-  if (estimate.stageSharedHours > 0) {
-    return `A+B ${formatRuntimeDuration(estimate.totalHours)}`;
-  }
-
-  if (estimate.trailingBattery) {
-    return `${estimate.trailingBattery} ${formatRuntimeDuration(estimate.totalHours)}`;
-  }
-
-  return formatRuntimeDuration(estimate.totalHours);
-};
-
 const enqueueSimulationEvent = (event: SimulationEvent) => {
   simulationEventQueue.push(event);
 };
@@ -514,7 +399,17 @@ const getBatteryMenuStatsSnapshot = (): BatteryMenuStats => ({
       batterySupplyModuleCount,
       solarEffectiveness: telemetry.solarEffectiveness,
       loadCurrentA: telemetry.loadCurrentA,
-      netBatteryCurrentA: telemetry.netBatteryCurrentA
+      netBatteryCurrentA: telemetry.netBatteryCurrentA,
+      state: {
+        batteryACharge: simulation.batteryACharge,
+        batteryBCharge: simulation.batteryBCharge,
+        batteryAConnectedToBus: simulation.batteryAConnectedToBus,
+        batteryBConnectedToBus: simulation.batteryBConnectedToBus,
+        solarPanelsConnected: simulation.solarPanelsConnected,
+        mainBusConnected: simulation.mainBusConnected,
+        lightsMainOn: simulation.lightsMainOn
+      },
+      config: ELECTRICAL_CONFIG
     });
     return {
       ...telemetry,
@@ -530,24 +425,6 @@ const getBatteryMenuStatsSnapshot = (): BatteryMenuStats => ({
   batteryACharge: simulation.batteryACharge,
   batteryBCharge: simulation.batteryBCharge
 });
-
-const serializeBatteryMenuStats = (stats: BatteryMenuStats): string => {
-  return [
-    Number(stats.mainBusConnected),
-    Number(stats.solarPanelsConnected),
-    Number(stats.batteryAConnectedToBus),
-    Number(stats.batteryBConnectedToBus),
-    Number(stats.lightsMainOn),
-    stats.batteryACharge.toFixed(6),
-    stats.batteryBCharge.toFixed(6),
-    stats.solarEffectiveness.toFixed(6),
-    stats.solarChargeCurrentA.toFixed(6),
-    stats.loadCurrentA.toFixed(6),
-    stats.netBatteryCurrentA.toFixed(6),
-    String(stats.batterySupplyModuleCount),
-    stats.batteryRuntimeEstimate
-  ].join('|');
-};
 
 let lastBatteryMenuStatsSignature = '';
 let lastBatteryMenuStatsEventAtMs = 0;
@@ -655,7 +532,7 @@ const stepSimulationTick = (_nowMs: number) => {
   simulation.tick += 1;
   simulation.altitude = simulation.shipAltitudeAslM;
 
-  const shipSolarState = getShipSolarState(utcNowMs);
+  const shipSolarState = getShipSolarState(utcNowMs, simulation);
   simulation.shipLocalSolarTimeHours = shipSolarState.localSolarTimeHours;
   enqueueHelmRudderReportIfDue(utcNowMs);
 
@@ -676,7 +553,7 @@ const stepSimulationTick = (_nowMs: number) => {
     {
       tickSeconds: SIM_TICK_SECONDS,
       batterySupplyModuleCount,
-      solarEffectiveness: hasBatterySupplyModule ? getSolarChargeEffectiveness(utcNowMs) : 0
+      solarEffectiveness: hasBatterySupplyModule ? getSolarChargeEffectiveness(utcNowMs, simulation, simulation.solarPanelsConnected) : 0
     },
     ELECTRICAL_CONFIG
   );
@@ -1086,115 +963,11 @@ dynamicSkyMesh.renderOrder = -1000;
 scene.add(dynamicSkyMesh);
 
 const DEG_TO_RAD = Math.PI / 180;
-const RAD_TO_DEG = 180 / Math.PI;
 
 const clampNumber = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 
-const normalizeLongitudeDeg = (longitudeDeg: number): number => ((longitudeDeg + 180) % 360 + 360) % 360 - 180;
-
-const getUtcDayOfYear = (date: Date): number => {
-  const year = date.getUTCFullYear();
-  const startOfYearUtc = Date.UTC(year, 0, 1);
-  const startOfTodayUtc = Date.UTC(year, date.getUTCMonth(), date.getUTCDate());
-  return Math.floor((startOfTodayUtc - startOfYearUtc) / 86400000) + 1;
-};
-
-const calculateSubsolarPoint = (dateUtc: Date): { latitudeDeg: number, longitudeDeg: number } => {
-  const utcHours =
-    dateUtc.getUTCHours() +
-    dateUtc.getUTCMinutes() / 60 +
-    dateUtc.getUTCSeconds() / 3600 +
-    dateUtc.getUTCMilliseconds() / 3600000;
-  const subsolarLongitudeDeg = normalizeLongitudeDeg(-15 * (utcHours - 12) + simulation.planetRotationDeg);
-
-  const dayOfYear = getUtcDayOfYear(dateUtc);
-  const seasonalAngleRad =
-    ((dayOfYear - 172) * (2 * Math.PI / 365.25)) +
-    simulation.planetOrbitalAngleDeg * DEG_TO_RAD;
-  const subsolarLatitudeDeg = simulation.planetAxialTiltDeg * Math.cos(seasonalAngleRad);
-
-  return {
-    latitudeDeg: subsolarLatitudeDeg,
-    longitudeDeg: subsolarLongitudeDeg
-  };
-};
-
-const calculateSunElevationAzimuth = (
-  observerLatitudeDeg: number,
-  observerLongitudeDeg: number,
-  subsolarLatitudeDeg: number,
-  subsolarLongitudeDeg: number
-): { elevationDeg: number, azimuthDeg: number } => {
-  const obsLatRad = observerLatitudeDeg * DEG_TO_RAD;
-  const obsLonRad = observerLongitudeDeg * DEG_TO_RAD;
-  const sunLatRad = subsolarLatitudeDeg * DEG_TO_RAD;
-  const sunLonRad = subsolarLongitudeDeg * DEG_TO_RAD;
-
-  const deltaLonRad = sunLonRad - obsLonRad;
-
-  const sinElevation =
-    Math.sin(obsLatRad) * Math.sin(sunLatRad) +
-    Math.cos(obsLatRad) * Math.cos(sunLatRad) * Math.cos(deltaLonRad);
-  const elevationDeg = Math.asin(clampNumber(sinElevation, -1, 1)) * RAD_TO_DEG;
-
-  const elevationRad = elevationDeg * DEG_TO_RAD;
-  const cosElevation = Math.cos(elevationRad);
-  if (Math.abs(cosElevation) < 1e-9) {
-    return {
-      elevationDeg,
-      azimuthDeg: subsolarLatitudeDeg > observerLatitudeDeg ? 180 : 0
-    };
-  }
-
-  const sinAzimuth = Math.sin(deltaLonRad) * Math.cos(sunLatRad) / cosElevation;
-  const cosAzimuth =
-    (Math.sin(sunLatRad) - Math.sin(obsLatRad) * Math.sin(elevationRad)) /
-    (Math.cos(obsLatRad) * cosElevation);
-
-  const azimuthDeg = (Math.atan2(sinAzimuth, cosAzimuth) * RAD_TO_DEG + 360) % 360;
-  return { elevationDeg, azimuthDeg };
-};
-
-const getShipSolarState = (utcMs: number): {
-  observerLatitudeDeg: number;
-  observerLongitudeDeg: number;
-  observerAltitudeAslM: number;
-  localSolarTimeHours: number;
-  elevationDeg: number;
-  azimuthDeg: number;
-} => {
-  const utcNow = new Date(utcMs);
-  const observerLatitudeDeg = clampNumber(simulation.shipLatitudeDeg, -90, 90);
-  const observerLongitudeDeg = normalizeLongitudeDeg(simulation.shipLongitudeDeg);
-  const observerAltitudeAslM = Math.max(0, simulation.shipAltitudeAslM);
-
-  const utcHours =
-    utcNow.getUTCHours() +
-    utcNow.getUTCMinutes() / 60 +
-    utcNow.getUTCSeconds() / 3600 +
-    utcNow.getUTCMilliseconds() / 3600000;
-  const localSolarTimeHours = ((utcHours + (observerLongitudeDeg / 15)) % 24 + 24) % 24;
-
-  const { latitudeDeg: subsolarLat, longitudeDeg: subsolarLon } = calculateSubsolarPoint(utcNow);
-  const { elevationDeg, azimuthDeg } = calculateSunElevationAzimuth(
-    observerLatitudeDeg,
-    observerLongitudeDeg,
-    subsolarLat,
-    subsolarLon
-  );
-
-  return {
-    observerLatitudeDeg,
-    observerLongitudeDeg,
-    observerAltitudeAslM,
-    localSolarTimeHours,
-    elevationDeg,
-    azimuthDeg
-  };
-};
-
 const updateGlobalLightingFromUtc = (utcMs: number) => {
-  const { elevationDeg, azimuthDeg, observerAltitudeAslM } = getShipSolarState(utcMs);
+  const { elevationDeg, azimuthDeg, observerAltitudeAslM } = getShipSolarState(utcMs, simulation);
 
   const elevationRad = elevationDeg * DEG_TO_RAD;
   const azimuthRad = azimuthDeg * DEG_TO_RAD;
@@ -1801,22 +1574,11 @@ const computeMainBusPowered = (): boolean => {
   );
 };
 
-const getSolarChargeEffectiveness = (utcMs: number): number => {
-  if (!simulation.solarPanelsConnected) {
-    return 0;
-  }
-
-  const { elevationDeg, observerAltitudeAslM } = getShipSolarState(utcMs);
-
-  const sunFacingFactor = Math.max(0, Math.sin(elevationDeg * DEG_TO_RAD));
-  const distanceFactor = 1 / Math.max(0.25, simulation.planetDistanceAu) ** 2;
-  const altitudeBoost = 1 + clampNumber(observerAltitudeAslM / 12000, 0, 0.16);
-  return clampNumber(sunFacingFactor * distanceFactor * altitudeBoost, 0, 1);
-};
-
 const getElectricalTelemetry = (utcMs: number) => {
   const hasBatterySupplyModule = getBatterySupplyModuleCount() > 0;
-  const solarEffectiveness = hasBatterySupplyModule ? getSolarChargeEffectiveness(utcMs) : 0;
+  const solarEffectiveness = hasBatterySupplyModule
+    ? getSolarChargeEffectiveness(utcMs, simulation, simulation.solarPanelsConnected)
+    : 0;
   const telemetry = getElectricalTelemetryForState(
     {
       batteryACharge: simulation.batteryACharge,
@@ -2487,7 +2249,7 @@ syncPlayerCamera();
 let lastAutosaveAt = performance.now();
 const menuStack: MenuStackEntry[] = [];
 let menuVisible = true;
-const liveMenuValueBindings = new Map<LiveValueBindingKey, HTMLElement>();
+const liveMenuValueBindings = new Map<BatteryLiveValueKey, HTMLElement>();
 let controlsListeningFor: ControlsListeningState | null = null;
 let lastGamepadState: { buttons: boolean[]; axes: number[] } = { buttons: [], axes: [] };
 let lastMenuActionState: ActionState | null = null;
@@ -2507,31 +2269,13 @@ const isBatteryControlMenuVisible = (): boolean => {
   return menuVisible && currentMenu?.menuName === 'batteryControlMenu';
 };
 
-const getLiveValueText = (key: LiveValueBindingKey, stats: BatteryMenuStats): string => {
-  if (key === 'main-bus-connect') return stats.mainBusConnected ? 'Connected' : 'Disconnected';
-  if (key === 'solar-connect') return stats.solarPanelsConnected ? 'Connected' : 'Disconnected';
-  if (key === 'battery-a-connect') return stats.batteryAConnectedToBus ? 'Connected' : 'Disconnected';
-  if (key === 'battery-b-connect') return stats.batteryBConnectedToBus ? 'Connected' : 'Disconnected';
-  if (key === 'lights-main') return stats.lightsMainOn ? 'On' : 'Off';
-  if (key === 'battery-a-charge') return formatBatteryPercent(stats.batteryACharge);
-  if (key === 'battery-b-charge') return formatBatteryPercent(stats.batteryBCharge);
-  if (key === 'solar-effectiveness') return `${(stats.solarEffectiveness * 100).toFixed(0)}%`;
-  if (key === 'solar-charge-current') {
-    return `${stats.solarChargeCurrentA.toFixed(1)} A (${ELECTRICAL_CONFIG.solarArrayNominalVoltageV} V array → ${ELECTRICAL_CONFIG.mainBusNominalVoltageV} V bus)`;
-  }
-  if (key === 'load-current') return `${stats.loadCurrentA.toFixed(1)} A @ ${ELECTRICAL_CONFIG.mainBusNominalVoltageV} V`;
-  if (key === 'battery-runtime') return stats.batteryRuntimeEstimate;
-  const netLabel = stats.netBatteryCurrentA >= 0 ? '+' : '';
-  return `${netLabel}${stats.netBatteryCurrentA.toFixed(1)} A`;
-};
-
 const applyBatteryMenuStatsToLiveBindings = (stats: BatteryMenuStats) => {
   if (!isBatteryControlMenuVisible()) {
     return;
   }
 
   liveMenuValueBindings.forEach((element, key) => {
-    const nextValue = getLiveValueText(key, stats);
+    const nextValue = getBatteryMenuLiveValueText(key, stats, ELECTRICAL_CONFIG);
     if (element.textContent !== nextValue) {
       element.textContent = nextValue;
     }
@@ -2585,104 +2329,13 @@ const setTheme = (themeMode: ThemeMode) => {
 
 let currentTheme: ThemeMode = settings.themeMode;
 
-const formatBindingName = (binding: ControlBinding): string => {
-  if (!binding) return '---';
-
-  if (typeof binding === 'object') {
-    if (binding.type === 'button') {
-      const btnMap: Record<number, string> = {
-        0: 'GP:A',
-        1: 'GP:B',
-        2: 'GP:X',
-        3: 'GP:Y',
-        4: 'GP:LB',
-        5: 'GP:RB',
-        6: 'GP:LT',
-        7: 'GP:RT',
-        8: 'GP:Back',
-        9: 'GP:Start'
-      };
-      return btnMap[binding.btn] ?? `GP:B${binding.btn}`;
-    }
-    const dir = binding.dir > 0 ? '+' : '-';
-    return `GP:A${binding.axis}${dir}`;
-  }
-
-  const keyMap: Record<string, string> = {
-    ArrowLeft: '←',
-    ArrowRight: '→',
-    ArrowUp: '↑',
-    ArrowDown: '↓',
-    Escape: 'Esc',
-    Enter: 'Enter',
-    Space: 'Space',
-    Backspace: 'Backspace',
-    Delete: 'Delete'
-  };
-
-  if (keyMap[binding]) return keyMap[binding];
-  if (binding.startsWith('Key')) return binding.slice(3);
-  if (binding.startsWith('Digit')) return binding.slice(5);
-  if (binding.startsWith('Numpad')) return `Num${binding.slice(6)}`;
-  return binding;
+const isBoundActionPressed = (action: ControlAction): boolean => {
+  return isActionPressed(action, settings.controls.bindings, keys);
 };
 
-const getConnectedGamepad = (): Gamepad | null => {
-  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-  for (const gamepad of gamepads) {
-    if (gamepad) {
-      return gamepad;
-    }
-  }
-  return null;
+const getBoundMenuActionState = (): ActionState => {
+  return getMenuActionState(settings.controls.bindings, keys);
 };
-
-const bindingMatchesGamepad = (binding: ControlBinding, gamepad: Gamepad | null): boolean => {
-  if (!binding || typeof binding !== 'object' || !gamepad) {
-    return false;
-  }
-  const axisThreshold = 0.5;
-  if (binding.type === 'button') {
-    return !!gamepad.buttons[binding.btn]?.pressed;
-  }
-  const value = gamepad.axes[binding.axis] ?? 0;
-  return binding.dir < 0 ? value < -axisThreshold : value > axisThreshold;
-};
-
-const isActionPressed = (action: ControlAction): boolean => {
-  const bindings = settings.controls.bindings[action];
-  const gamepad = getConnectedGamepad();
-
-  const checkBinding = (binding: ControlBinding): boolean => {
-    if (!binding) return false;
-    if (typeof binding === 'string') {
-      return !!keys[binding];
-    }
-    return bindingMatchesGamepad(binding, gamepad);
-  };
-
-  return checkBinding(bindings[0]) || checkBinding(bindings[1]);
-};
-
-const getMenuActionState = (): ActionState => ({
-  left: isActionPressed('left'),
-  right: isActionPressed('right'),
-  up: isActionPressed('up'),
-  down: isActionPressed('down'),
-  confirm: isActionPressed('confirm'),
-  back: isActionPressed('back'),
-  pause: isActionPressed('pause')
-});
-
-const getActionEdges = (prevState: ActionState | null, currentState: ActionState): ActionState => ({
-  left: !!currentState.left && !(prevState?.left ?? false),
-  right: !!currentState.right && !(prevState?.right ?? false),
-  up: !!currentState.up && !(prevState?.up ?? false),
-  down: !!currentState.down && !(prevState?.down ?? false),
-  confirm: !!currentState.confirm && !(prevState?.confirm ?? false),
-  back: !!currentState.back && !(prevState?.back ?? false),
-  pause: !!currentState.pause && !(prevState?.pause ?? false)
-});
 
 const getMenuFocusables = (): HTMLElement[] => {
   if (!menuVisible) {
@@ -2763,10 +2416,10 @@ const stopListeningForBinding = () => {
     cancelAnimationFrame(controlsListeningFor.gamepadPollId);
   }
   controlsListeningFor = null;
-  lastMenuActionState = getMenuActionState();
+  lastMenuActionState = getBoundMenuActionState();
 };
 
-const applyGamepadBinding = (binding: GamepadButtonBinding | GamepadAxisBinding) => {
+const applyGamepadBinding = (binding: InputGamepadButtonBinding | InputGamepadAxisBinding) => {
   if (!controlsListeningFor) return;
   const { action, slot } = controlsListeningFor;
   stopListeningForBinding();
@@ -3589,164 +3242,11 @@ const applyBehavior = (behavior: MenuBehavior, target?: MenuName, onSelect?: () 
   }
 };
 
-const renderSettingItem = (item: SettingMenuItem) => {
-  const row = document.createElement('div');
-  row.className = 'menu-setting-row';
-
-  const label = document.createElement('div');
-  label.className = 'menu-setting-label ui-label';
-  label.textContent = item.label;
-
-  const value = document.createElement('div');
-  value.className = 'menu-setting-value ui-value';
-  value.textContent = item.value;
-  if (item.liveValueKey) {
-    liveMenuValueBindings.set(item.liveValueKey, value);
-  }
-
-  const actions = document.createElement('div');
-  actions.className = 'menu-setting-actions';
-
-  item.actions.forEach((action) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'pixel-button menu-btn-small';
-    button.textContent = action.label;
-    button.addEventListener('click', () => {
-      applyBehavior(action.behavior, undefined, action.onSelect);
-    });
-    actions.appendChild(button);
-  });
-
-  row.append(label, value, actions);
-  return row;
-};
-
-const renderControlItem = (item: ControlMenuItem) => {
-  const row = document.createElement('div');
-  row.className = 'menu-setting-row menu-control-row';
-
-  const label = document.createElement('div');
-  label.className = 'menu-setting-label ui-label';
-  label.textContent = item.label;
-
-  const slots = document.createElement('div');
-  slots.className = 'menu-control-slots';
-
-  const makeSlotButton = (slot: 0 | 1, value: ControlBinding) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'pixel-button menu-btn-small menu-control-btn';
-    button.textContent = formatBindingName(value);
-    button.addEventListener('click', () => {
-      startListeningForBinding(item.action, slot, button, null);
-    });
-    button.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        startListeningForBinding(item.action, slot, button, event.code);
-      }
-    });
-    return button;
-  };
-
-  const primary = makeSlotButton(0, item.primary);
-  const secondary = makeSlotButton(1, item.secondary);
-  slots.append(primary, secondary);
-
-  row.append(label, slots);
-  return row;
-};
-
-const renderTextItem = (item: TextMenuItem) => {
-  const row = document.createElement('div');
-  row.className = 'menu-setting-row';
-
-  const label = document.createElement('div');
-  label.className = 'menu-setting-label ui-label';
-  label.textContent = item.label;
-
-  if (item.href) {
-    const link = document.createElement('a');
-    link.href = item.href;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.className = 'menu-link ui-value';
-    link.textContent = item.value;
-    row.append(label, link);
-  } else {
-    const value = document.createElement('div');
-    value.className = 'menu-setting-value ui-value';
-    value.textContent = item.value;
-    if (item.liveValueKey) {
-      liveMenuValueBindings.set(item.liveValueKey, value);
-    }
-    row.append(label, value);
-  }
-
-  return row;
-};
-
-const renderImageLinkItem = (item: ImageLinkMenuItem) => {
-  const row = document.createElement('div');
-  row.className = 'menu-setting-row menu-image-row';
-
-  const label = document.createElement('div');
-  label.className = 'menu-setting-label ui-label';
-  label.textContent = item.label;
-
-  const link = document.createElement('a');
-  link.href = item.href;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.className = 'menu-image-link';
-
-  const image = document.createElement('img');
-  image.src = item.src;
-  image.alt = item.alt;
-  image.className = 'menu-image';
-  link.appendChild(image);
-
-  row.append(label, link);
-  return row;
-};
-
-const renderLetterItem = (item: LetterMenuItem) => {
-  const letter = document.createElement('article');
-  letter.className = 'menu-letter';
-
-  const header = document.createElement('header');
-  header.className = 'menu-letter-header';
-
-  const from = document.createElement('div');
-  from.className = 'menu-letter-meta ui-value';
-  from.textContent = `From: ${item.from}`;
-
-  const to = document.createElement('div');
-  to.className = 'menu-letter-meta ui-value';
-  to.textContent = `To: ${item.to}`;
-
-  const subject = document.createElement('div');
-  subject.className = 'menu-letter-meta ui-value';
-  subject.textContent = `Subject: ${item.subject}`;
-
-  const dateUtc = document.createElement('div');
-  dateUtc.className = 'menu-letter-meta ui-value';
-  dateUtc.textContent = item.dateUtc;
-
-  header.append(from, to, subject, dateUtc);
-
-  const body = document.createElement('div');
-  body.className = 'menu-letter-body';
-  item.paragraphs.forEach((paragraphText) => {
-    const paragraph = document.createElement('p');
-    paragraph.className = 'menu-letter-paragraph';
-    paragraph.textContent = paragraphText;
-    body.appendChild(paragraph);
-  });
-
-  letter.append(header, body);
-  return letter;
+const menuRenderDeps = {
+  applyBehavior,
+  formatBindingName,
+  startListeningForBinding,
+  liveMenuValueBindings
 };
 
 const renderCurrentMenu = () => {
@@ -3800,17 +3300,17 @@ const renderCurrentMenu = () => {
     }
 
     if (item.type === 'setting') {
-      menuItems.appendChild(renderSettingItem(item));
+      menuItems.appendChild(renderSettingItem(item, menuRenderDeps));
       return;
     }
 
     if (item.type === 'control') {
-      menuItems.appendChild(renderControlItem(item));
+      menuItems.appendChild(renderControlItem(item, menuRenderDeps));
       return;
     }
 
     if (item.type === 'text') {
-      menuItems.appendChild(renderTextItem(item));
+      menuItems.appendChild(renderTextItem(item, menuRenderDeps));
       return;
     }
 
@@ -3857,601 +3357,35 @@ const cycleQuality = () => {
   saveLocalState();
 };
 
-const buildMainMenuItems = (): MenuItem[] => [
-  {
-    type: 'action',
-    label: 'New Game',
-    behavior: 'action',
-    onSelect: startNewGame
-  },
-  {
-    type: 'action',
-    label: 'Resume Game',
-    behavior: 'action',
-    disabled: !hasSavedGame(),
-    onSelect: resumeGame
-  },
-  {
-    type: 'action',
-    label: 'Export Game',
-    behavior: 'action',
-    onSelect: exportSave
-  },
-  {
-    type: 'action',
-    label: 'Import Game',
-    behavior: 'action',
-    onSelect: importSave
-  },
-  {
-    type: 'action',
-    label: 'Settings',
-    behavior: 'submenu',
-    target: 'settingsMenu'
-  },
-  {
-    type: 'action',
-    label: 'About',
-    behavior: 'submenu',
-    target: 'aboutMenu'
-  }
-];
-
-const buildSettingsItems = (): MenuItem[] => [
-  {
-    type: 'action',
-    label: 'Graphics',
-    behavior: 'submenu',
-    target: 'graphicsMenu'
-  },
-  {
-    type: 'action',
-    label: 'Audio',
-    behavior: 'submenu',
-    target: 'audioMenu'
-  },
-  {
-    type: 'action',
-    label: 'Controls',
-    behavior: 'submenu',
-    target: 'controlsMenu'
-  },
-  {
-    type: 'action',
-    label: 'Advanced',
-    behavior: 'submenu',
-    target: 'advancedMenu'
-  }
-];
-
-const buildGraphicsItems = (): MenuItem[] => [
-  {
-    type: 'setting',
-    label: 'Theme',
-    value: settings.themeMode,
-    actions: [
-      {
-        label: 'Cycle',
-        behavior: 'keep-open',
-        onSelect: () => {
-          const index = modeCycle.indexOf(currentTheme);
-          currentTheme = modeCycle[(index + 1) % modeCycle.length] ?? 'system';
-          setTheme(currentTheme);
-        }
-      }
-    ]
-  },
-  {
-    type: 'setting',
-    label: 'Quality',
-    value: settings.graphics.quality,
-    actions: [
-      {
-        label: 'Cycle',
-        behavior: 'keep-open',
-        onSelect: cycleQuality
-      }
-    ]
-  },
-  {
-    type: 'setting',
-    label: 'Pixel Scale',
-    value: String(settings.graphics.pixelScale),
-    actions: [
-      {
-        label: '-',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.graphics.pixelScale = adjustNumber(settings.graphics.pixelScale, -1, 1, 4);
-          saveLocalState();
-        }
-      },
-      {
-        label: '+',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.graphics.pixelScale = adjustNumber(settings.graphics.pixelScale, 1, 1, 4);
-          saveLocalState();
-        }
-      }
-    ]
-  },
-  {
-    type: 'setting',
-    label: 'Scanlines',
-    value: settings.graphics.showScanlines ? 'On' : 'Off',
-    actions: [
-      {
-        label: 'Toggle',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.graphics.showScanlines = !settings.graphics.showScanlines;
-          saveLocalState();
-        }
-      }
-    ]
-  }
-];
-
-const buildAudioItems = (): MenuItem[] => [
-  {
-    type: 'setting',
-    label: 'Master Volume',
-    value: `${settings.audio.masterVolume}%`,
-    actions: [
-      {
-        label: '-',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.audio.masterVolume = adjustNumber(settings.audio.masterVolume, -5, 0, 100);
-          saveLocalState();
-        }
-      },
-      {
-        label: '+',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.audio.masterVolume = adjustNumber(settings.audio.masterVolume, 5, 0, 100);
-          saveLocalState();
-        }
-      }
-    ]
-  },
-  {
-    type: 'setting',
-    label: 'UI Volume',
-    value: `${settings.audio.uiVolume}%`,
-    actions: [
-      {
-        label: '-',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.audio.uiVolume = adjustNumber(settings.audio.uiVolume, -5, 0, 100);
-          saveLocalState();
-        }
-      },
-      {
-        label: '+',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.audio.uiVolume = adjustNumber(settings.audio.uiVolume, 5, 0, 100);
-          saveLocalState();
-        }
-      }
-    ]
-  },
-  {
-    type: 'setting',
-    label: 'Muted',
-    value: settings.audio.muted ? 'Yes' : 'No',
-    actions: [
-      {
-        label: 'Toggle',
-        behavior: 'keep-open',
-        onSelect: toggleMute
-      }
-    ]
-  }
-];
-
-const buildControlsItems = (): MenuItem[] => {
-  const items: MenuItem[] = [
-    {
-      type: 'setting',
-      label: 'Invert Mouse Y',
-      value: settings.controls.invertMouseY ? 'On' : 'Off',
-      actions: [
-        {
-          label: 'Toggle',
-          behavior: 'keep-open',
-          onSelect: () => {
-            settings.controls.invertMouseY = !settings.controls.invertMouseY;
-            saveLocalState();
-          }
-        }
-      ]
-    },
-    {
-      type: 'divider'
-    },
-    {
-      type: 'text',
-      label: 'Rebind',
-      value: 'Click a slot, then press key or move gamepad input. Del/Backspace clears.'
-    },
-    {
-      type: 'divider'
-    }
-  ];
-
-  CONTROL_ACTIONS.forEach((action) => {
-    const pair = settings.controls.bindings[action];
-    items.push({
-      type: 'control',
-      action,
-      label: CONTROL_LABELS[action],
-      primary: pair[0],
-      secondary: pair[1]
-    });
-  });
-
-  items.push({
-    type: 'divider'
-  });
-
-  items.push({
-    type: 'action',
-    label: 'Reset Controls',
-    behavior: 'keep-open',
-    onSelect: () => {
-      settings.controls.bindings = defaultControls();
-      saveLocalState();
-      stopListeningForBinding();
-      showToast('Controls reset');
-    }
-  });
-
-  return items;
-};
-
-const buildAdvancedItems = (): MenuItem[] => [
-  {
-    type: 'setting',
-    label: 'Autosave (sec)',
-    value: `${settings.advanced.autosaveSeconds}`,
-    actions: [
-      {
-        label: '-',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.advanced.autosaveSeconds = adjustNumber(settings.advanced.autosaveSeconds, -1, 2, 60);
-          saveLocalState();
-        }
-      },
-      {
-        label: '+',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.advanced.autosaveSeconds = adjustNumber(settings.advanced.autosaveSeconds, 1, 2, 60);
-          saveLocalState();
-        }
-      }
-    ]
-  },
-  {
-    type: 'setting',
-    label: 'Diagnostics',
-    value: settings.advanced.diagnostics ? 'On' : 'Off',
-    actions: [
-      {
-        label: 'Toggle',
-        behavior: 'keep-open',
-        onSelect: () => {
-          settings.advanced.diagnostics = !settings.advanced.diagnostics;
-          saveLocalState();
-        }
-      }
-    ]
-  }
-];
-
-const buildAboutItems = (): MenuItem[] => [
-  {
-    type: 'text',
-    label: 'Title',
-    value: 'Airship One'
-  },
-  {
-    type: 'text',
-    label: 'Version',
-    value: appVersion
-  },
-  {
-    type: 'text',
-    label: 'Developer',
-    value: 'Timeless Prototype'
-  },
-  {
-    type: 'text',
-    label: 'Authors',
-    value: 'Timeless Prototype, GPT-5.3-Codex'
-  },
-  {
-    type: 'image-link',
-    label: 'Support',
-    src: `${import.meta.env.BASE_URL}assets/bmac/default-yellow.png`,
-    href: 'https://buymeacoffee.com/timelessp',
-    alt: 'Buy Me A Coffee'
-  }
-];
-
-const buildCaptainsLetterItems = (): MenuItem[] => [
-  {
-    type: 'letter',
-    from: 'Chief Engineer Mirelle Kade',
-    to: 'Captain',
-    subject: 'Stormline routing and trim guidance',
-    dateUtc: new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC',
-    paragraphs: [
-      'Stormline reports are true. Crosswind shears are rising along the northern route.',
-      'I tightened the aft stabilizer rigging, but avoid hard turns after dusk until we re-balance ballast.',
-      'If we must press on, keep her nose five degrees high and trim slow. She will answer kindly.'
-    ]
-  }
-];
-
-const buildBatteryControlItems = (): MenuItem[] => {
-  const telemetry = getElectricalTelemetry(simulation.updatedAt || Date.now());
-
-  return [
-  {
-    type: 'setting',
-    label: 'Main Bus',
-    value: simulation.mainBusConnected ? 'Connected' : 'Disconnected',
-    liveValueKey: 'main-bus-connect',
-    actions: [
-      {
-        label: 'Toggle',
-        behavior: 'keep-open',
-        onSelect: () => {
-          enqueueSimulationEvent({ type: 'power/toggle-main-bus-connect' });
-        }
-      }
-    ]
-  },
-  {
-    type: 'setting',
-    label: 'Solar Panels → Charge Bus',
-    value: simulation.solarPanelsConnected ? 'Connected' : 'Disconnected',
-    liveValueKey: 'solar-connect',
-    actions: [
-      {
-        label: 'Toggle',
-        behavior: 'keep-open',
-        onSelect: () => {
-          enqueueSimulationEvent({ type: 'power/toggle-solar-connect' });
-        }
-      }
-    ]
-  },
-  {
-    type: 'divider'
-  },
-  {
-    type: 'setting',
-    label: 'Battery A → Bus',
-    value: simulation.batteryAConnectedToBus ? 'Connected' : 'Disconnected',
-    liveValueKey: 'battery-a-connect',
-    actions: [
-      {
-        label: 'Toggle',
-        behavior: 'keep-open',
-        onSelect: () => {
-          enqueueSimulationEvent({ type: 'battery/toggle-a-bus' });
-        }
-      }
-    ]
-  },
-  {
-    type: 'setting',
-    label: 'Battery B → Bus',
-    value: simulation.batteryBConnectedToBus ? 'Connected' : 'Disconnected',
-    liveValueKey: 'battery-b-connect',
-    actions: [
-      {
-        label: 'Toggle',
-        behavior: 'keep-open',
-        onSelect: () => {
-          enqueueSimulationEvent({ type: 'battery/toggle-b-bus' });
-        }
-      }
-    ]
-  },
-  {
-    type: 'setting',
-    label: 'Lights Main',
-    value: simulation.lightsMainOn ? 'On' : 'Off',
-    liveValueKey: 'lights-main',
-    actions: [
-      {
-        label: 'Toggle',
-        behavior: 'keep-open',
-        onSelect: () => {
-          enqueueSimulationEvent({ type: 'battery/toggle-lights-main' });
-        }
-      }
-    ]
-  },
-  {
-    type: 'divider'
-  },
-  {
-    type: 'text',
-    label: 'Battery A',
-    value: formatBatteryPercent(simulation.batteryACharge),
-    liveValueKey: 'battery-a-charge'
-  },
-  {
-    type: 'text',
-    label: 'Battery B',
-    value: formatBatteryPercent(simulation.batteryBCharge),
-    liveValueKey: 'battery-b-charge'
-  },
-  {
-    type: 'text',
-    label: 'Solar Effectiveness',
-    value: `${(telemetry.solarEffectiveness * 100).toFixed(0)}%`,
-    liveValueKey: 'solar-effectiveness'
-  },
-  {
-    type: 'text',
-    label: 'Solar Charge',
-    value: `${telemetry.solarChargeCurrentA.toFixed(1)} A (${ELECTRICAL_CONFIG.solarArrayNominalVoltageV} V array → ${ELECTRICAL_CONFIG.mainBusNominalVoltageV} V bus)`,
-    liveValueKey: 'solar-charge-current'
-  },
-  {
-    type: 'text',
-    label: 'Active Load',
-    value: `${telemetry.loadCurrentA.toFixed(1)} A @ ${ELECTRICAL_CONFIG.mainBusNominalVoltageV} V`,
-    liveValueKey: 'load-current'
-  },
-  {
-    type: 'text',
-    label: 'Net Battery Current',
-    value: `${telemetry.netBatteryCurrentA >= 0 ? '+' : ''}${telemetry.netBatteryCurrentA.toFixed(1)} A`,
-    liveValueKey: 'net-battery-current'
-  },
-  {
-    type: 'text',
-    label: 'Estimated Runtime',
-    value: getBatteryMenuStatsSnapshot().batteryRuntimeEstimate,
-    liveValueKey: 'battery-runtime'
-  }
-];
-};
-
-const MENUS: Record<MenuName, MenuDefinition> = {
-  mainMenu: {
-    isRoot: true,
-    title: 'Main Menu',
-    overview: 'Start, resume, and manage local save data.',
-    itemBuilder: buildMainMenuItems,
-    actions: [
-      {
-        label: 'Close',
-        behavior: 'close'
-      }
-    ]
-  },
-  settingsMenu: {
-    isRoot: false,
-    title: 'Settings',
-    overview: 'Configure graphics, audio, controls, and advanced options.',
-    itemBuilder: buildSettingsItems,
-    actions: [
-      {
-        label: 'Back',
-        behavior: 'back'
-      }
-    ]
-  },
-  graphicsMenu: {
-    isRoot: false,
-    title: 'Graphics',
-    overview: 'Visual display configuration.',
-    itemBuilder: buildGraphicsItems,
-    actions: [
-      {
-        label: 'Back',
-        behavior: 'back'
-      }
-    ]
-  },
-  audioMenu: {
-    isRoot: false,
-    title: 'Audio',
-    overview: 'Master and interface audio levels.',
-    itemBuilder: buildAudioItems,
-    actions: [
-      {
-        label: 'Back',
-        behavior: 'back'
-      }
-    ]
-  },
-  controlsMenu: {
-    isRoot: false,
-    title: 'Controls',
-    overview: 'Dual keyboard/gamepad bindings with HID capture.',
-    itemBuilder: buildControlsItems,
-    actions: [
-      {
-        label: 'Back',
-        behavior: 'back'
-      }
-    ]
-  },
-  advancedMenu: {
-    isRoot: false,
-    title: 'Advanced',
-    overview: 'Autosave cadence and diagnostics toggle.',
-    itemBuilder: buildAdvancedItems,
-    actions: [
-      {
-        label: 'Back',
-        behavior: 'back'
-      }
-    ]
-  },
-  aboutMenu: {
-    isRoot: false,
-    title: 'About',
-    overview: 'Project metadata and credits.',
-    itemBuilder: buildAboutItems,
-    actions: [
-      {
-        label: 'Back',
-        behavior: 'back'
-      }
-    ]
-  },
-  insertModuleMenu: {
-    isRoot: false,
-    title: 'Insert Module',
-    overview: 'Choose a module to insert at selected join.',
-    itemBuilder: buildInsertModuleItems,
-    actions: [
-      {
-        label: 'Back',
-        behavior: 'back'
-      }
-    ]
-  },
-  captainsLetterMenu: {
-    isRoot: true,
-    title: "Captain's Letter",
-    overview: 'A folded note left on your desk.',
-    itemBuilder: buildCaptainsLetterItems,
-    actions: [
-      {
-        label: 'Close',
-        behavior: 'close'
-      }
-    ]
-  },
-  batteryControlMenu: {
-    isRoot: true,
-    title: 'Battery Control Panel',
-    overview: 'Bus tie controls, lights switch, and live battery state.',
-    itemBuilder: buildBatteryControlItems,
-    actions: [
-      {
-        label: 'Close',
-        behavior: 'close'
-      }
-    ]
-  }
-};
+const MENUS = createMenuDefinitions({
+  hasSavedGame,
+  startNewGame,
+  resumeGame,
+  exportSave,
+  importSave,
+  getSettings: () => settings,
+  getCurrentTheme: () => currentTheme,
+  modeCycle,
+  setTheme,
+  cycleQuality,
+  adjustNumber,
+  saveLocalState,
+  toggleMute,
+  controlActions: CONTROL_ACTIONS,
+  controlLabels: CONTROL_LABELS,
+  defaultControls,
+  stopListeningForBinding,
+  showToast,
+  getAppVersion: () => appVersion,
+  baseUrl: import.meta.env.BASE_URL,
+  getElectricalTelemetry,
+  getSimulation: () => simulation,
+  enqueueSimulationEvent,
+  formatBatteryPercent,
+  getBatteryMenuStatsSnapshot,
+  electricalConfig: ELECTRICAL_CONFIG,
+  buildInsertModuleItems
+});
 
 themeButton.addEventListener('click', () => {
   const modeIndex = modeCycle.indexOf(currentTheme);
@@ -4522,7 +3456,7 @@ const loop = (now: number) => {
   const delta = Math.min(0.1, (now - lastTime) / 1000);
   lastTime = now;
 
-  const menuActionState = getMenuActionState();
+  const menuActionState = getBoundMenuActionState();
   const menuActionEdges = getActionEdges(lastMenuActionState, menuActionState);
 
   if (!controlsListeningFor) {
@@ -4584,8 +3518,8 @@ const loop = (now: number) => {
       }
     }
 
-    const forwardInput = (isActionPressed('up') ? 1 : 0) - (isActionPressed('down') ? 1 : 0);
-    const strafeInput = (isActionPressed('left') ? 1 : 0) - (isActionPressed('right') ? 1 : 0);
+    const forwardInput = (isBoundActionPressed('up') ? 1 : 0) - (isBoundActionPressed('down') ? 1 : 0);
+    const strafeInput = (isBoundActionPressed('left') ? 1 : 0) - (isBoundActionPressed('right') ? 1 : 0);
 
     if (activeClimbVolume && !helmEngaged) {
       alignPlayerToClimbVolume(activeClimbVolume, delta);
@@ -4595,7 +3529,7 @@ const loop = (now: number) => {
         exitActiveClimb(getStandingEyeYForClimbVolume(activeClimbVolume));
       }
 
-      const climbInput = isActionPressed('up') ? 1 : 0;
+      const climbInput = isBoundActionPressed('up') ? 1 : 0;
       if (!detachRequested && climbInput !== 0) {
         const climbDirection = Math.abs(playerLook.y) < 0.08 ? 1 : Math.sign(playerLook.y || 1) as -1 | 1;
         playerPosition.y += climbDirection * ladderClimbSpeedMps * delta;

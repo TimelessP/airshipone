@@ -20,6 +20,11 @@ Build a menu system that is **data-driven**, **attribute-controlled**, and **non
 ### 1) Menu Definitions
 Define all menus in a single `MENUS` object. Menus are **pure data**.
 
+Implementation note for larger runtimes:
+- Keep menu data/builders in a dedicated module (for example `src/ui/menu-definitions.ts`).
+- Keep row/item renderers in a separate renderer module (for example `src/ui/menu-render.ts`).
+- Keep top-level menu orchestration (stack transitions, queue draining, pointer-lock coupling) in the runtime root (for example `src/main.ts`).
+
 ```js
 const MENUS = {
   computerRoom: {
@@ -148,6 +153,7 @@ Pattern:
 - Add a stable key per live value (for example `liveValueKey`).
 - During render, bind only the value element node to that key (`Map<key, HTMLElement>`).
 - Emit lightweight UI snapshot events from sim/event-queue only when values actually change.
+- Gate high-frequency stat event emission to when the target menu is visible, and apply a minimum enqueue interval to avoid queue churn.
 - On event consume, update bound text nodes directly (no `renderMenu()` call).
 - Keep `keep-open` behavior for toggle actions, but use a fast path that drains queue + applies live bindings and returns without redraw.
 

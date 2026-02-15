@@ -15,6 +15,10 @@ These instructions are for AI coding agents working in this repository.
 - Convenience shell wrappers exist (`dev-prepare.sh`, `dev-run.sh`, `dev-test.sh`, `dev-build.sh`, `dev-build-bump-ver.sh`) and delegate to npm scripts; `dev-build-bump-ver.sh` bumps version then builds.
 - Initial Vite + TypeScript + Three.js runtime scaffold exists (`index.html`, `src/main.ts`, `src/pwa/register-sw.ts`).
 - Unified stack-based main menu exists in `src/main.ts` with submenus for Settings/About and local save management (`new`, `resume`, `export JSON`, `import JSON`).
+- Menu definition and row-render helper extractions now exist under `src/ui/menu-definitions.ts` and `src/ui/menu-render.ts`; `src/main.ts` remains the orchestration root.
+- Battery menu stat/types/format helpers now live in `src/ui/battery-menu.ts` with `src/main.ts` consuming the module.
+- Input/gamepad formatting and action-state helpers now live in `src/core/input.ts` and are consumed via thin wrappers in `src/main.ts`.
+- Solar geometry and charge-effectiveness helpers now live in `src/render/lighting.ts` and are consumed by simulation/lighting callsites in `src/main.ts`.
 - Settings and local simulation state persist to browser local storage and round-trip via exported/imported JSON save envelopes.
 - Player pose state now persists in save envelopes (`playerPosition` + `playerYaw`/`playerPitch`) and restores on bootstrap/resume/import.
 - Persistent full-width top bar exists in `src/main.ts` (left hamburger menu toggle, centered title, right icon-only system/light/dark switcher).
@@ -24,12 +28,14 @@ These instructions are for AI coding agents working in this repository.
 - `captains_cabin_mk1` is generated via profile and includes authored furnishings (bed, locker, bookshelf with leather-bound books, desk, chair, A4 desk paper) as geometry plus blocked gameplay volumes.
 - Ladder room profile variants are now supported (`single`, `lowest`, `middle`, `highest`) with authored `climb` volumes and floor/ceiling hole variants for vertical traversal setups.
 - Runtime preview in `src/main.ts` now renders generated module block shells (including corridor window strips) using tile PNG textures from `assets/textures/tiles`.
-- Runtime module-join controls now use in-world `+/-` affordances with proximity gating and a center reticle hint; insert/remove rebuilds module chain and revalidates player position to nearest occupiable volume.
+- Runtime module-join controls now use in-world `+/-` affordances with proximity gating and a center reticle affordance (visual-only, no text hints); insert/remove rebuilds module chain and revalidates player position to nearest occupiable volume.
 - Interior module layout now persists independently per ladder floor via `simulation.floorModuleIdsByLevel`; insert/remove operations mutate only the targeted floor chain.
 - Ladder floor rendering now aligns ladder center Z across levels; floor add/remove must preserve vertical shaft alignment.
 - Floor/module ownership now uses strict explicit level state helpers in `src/main.ts` with no implicit cross-floor module fallback.
 - First 3D proximity interactable now exists: the captain's desk A4 paper opens a root-level unified menu letter view with a custom `letter` menu item renderer.
 - Electrical simulation now scales effective battery capacity/drain by installed battery-supply module count across all active ladder floors.
+- Battery control menu now uses queue-driven, in-place live value bindings with visibility/throttle gating for high-frequency stat events.
+- Battery control menu now shows a staged runtime estimate line that labels shared-bus and trailing-battery tail time (`A+B ... then B +tail`).
 - Core simulation now carries authoritative ship geo-time state (`shipLatitudeDeg`, `shipLongitudeDeg`, `shipAltitudeAslM`, `shipLocalSolarTimeHours`) derived from real UTC.
 - Global scene lighting and solar systems now derive from ship geo-time state (lat/lon/ASL + UTC) and planet parameters (rotation/orbital angle/tilt/distance).
 - Runtime now includes a parameterized procedural dynamic sky dome (day/sunset/night gradients + sun-centered coloration + evolving contiguous cloud coverage) synced to UTC sun direction.
