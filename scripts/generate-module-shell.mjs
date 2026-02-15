@@ -669,9 +669,9 @@ const buildGeometryAndVolumes = (params, tiles) => {
   const sidePillarOffsetZ = (windowOpeningLength / 2) + (sidePillarLength / 2);
   const wallUpperHeight = Math.max(0.2, params.heightM - windowTopHeight);
   const paneDepth = Math.max(0.02, params.wallOuterM * 0.35);
-  const paneHeight = Math.max(0.3, windowHeight - 0.06);
+  const paneHeight = Math.max(0.3, windowHeight);
   const paneLength = Math.max(0.3, windowOpeningLength - 0.08);
-  const paneCenterY = windowSillHeight + (paneHeight / 2);
+  const paneCenterY = windowCenterY;
   const ceilingLightRadius = 0.24;
   const ceilingLightHeight = 0.1;
   const ceilingLightY = params.heightM - params.ceilingThicknessM - (ceilingLightHeight / 2) - 0.03;

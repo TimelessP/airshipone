@@ -24,10 +24,11 @@ Keep contributors aligned on:
 - Theme model: runtime light/dark mode with tokenized Victorian wood/paper/velvet palette.
 - Menu model: data-driven stack-based DOM overlay menus with submenu/back/close behaviors and custom menu item renderers (e.g., `letter`).
 - Save model (current scaffold): browser `localStorage` envelope including settings + local simulation, with JSON export/import roundtrip and persisted player pose (`position`, `yaw`, `pitch`).
+- Ship-state model (current scaffold): authoritative geo-time fields in simulation (`shipLatitudeDeg`, `shipLongitudeDeg`, `shipAltitudeAslM`, `shipLocalSolarTimeHours`) updated from real UTC.
 - Controls model (current scaffold): dual bindings (keyboard + gamepad button/axis) with HID-safe rebind capture baseline.
 - Module generation model: parameterized generator profiles for generic module types and exact module variants (`--interior-profile auto|none|captains-cabin`).
 - Module runtime registry model: one handler file per module template under `src/modules/handlers/*.ts`, with `src/modules/registry.ts` as the single wiring point for fixed modules, insertable modules, and capability metadata (e.g., battery supply).
-- Lighting model (current scaffold): UTC-driven global sun + ambient from observer lat/lon and planet parameters.
+- Lighting model (current scaffold): UTC-driven global sun + ambient derived from authoritative ship geo-time state (lat/lon/ASL + UTC) and planet parameters.
 - Sky model (current scaffold): parameterized procedural sky dome (day/sunset/night gradients, sun-centered tinting, contiguous evolving cloud coverage).
 - Generated version artifacts:
   - `public/version.js` (local/dev fallback and build-time overwrite),

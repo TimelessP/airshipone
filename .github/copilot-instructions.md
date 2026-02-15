@@ -29,7 +29,8 @@ These instructions are for AI coding agents working in this repository.
 - Ladder floor rendering now aligns ladder center Z across levels; floor add/remove must preserve vertical shaft alignment.
 - Floor/module ownership now uses strict explicit level state helpers in `src/main.ts` with no implicit cross-floor module fallback.
 - First 3D proximity interactable now exists: the captain's desk A4 paper opens a root-level unified menu letter view with a custom `letter` menu item renderer.
-- Global scene lighting now follows UTC-driven sun + ambient calculations using observer latitude/longitude and planet parameters (rotation/orbital angle/tilt/distance).
+- Core simulation now carries authoritative ship geo-time state (`shipLatitudeDeg`, `shipLongitudeDeg`, `shipAltitudeAslM`, `shipLocalSolarTimeHours`) derived from real UTC.
+- Global scene lighting and solar systems now derive from ship geo-time state (lat/lon/ASL + UTC) and planet parameters (rotation/orbital angle/tilt/distance).
 - Runtime now includes a parameterized procedural dynamic sky dome (day/sunset/night gradients + sun-centered coloration + evolving contiguous cloud coverage) synced to UTC sun direction.
 - Interaction-opened menus (module insert, captain's paper, battery panel) now default to pointer recapture on close; explicit `Escape` release must cancel pending recapture.
 - Tile textures are preloaded before first module/material creation to prevent Three.js `Texture marked for update but no image data found` warnings.

@@ -426,7 +426,8 @@ Create a single-player airship simulator that is technically robust, mathematica
 ## Phase 7 — Core Ship Systems (Feature Parity Baseline)
 
 ### 7.1 Navigation & Flight
-- [ ] Ship state: position, heading, speed, altitude, vertical speed
+- [~] Ship state: position, heading, speed, altitude, vertical speed
+  - [x] Authoritative geo-time baseline: ship latitude/longitude/ASL + local solar time from UTC in simulation state
 - [ ] Route planning and waypoint management
 - [ ] Autopilot holds (heading, altitude, speed) with tolerances
 - [ ] Wind influence and drift model hooks

@@ -102,8 +102,10 @@ interface SimulationState {
   playerPositionZ: number;
   playerYaw: number;
   playerPitch: number;
-  playerLatitudeDeg: number;
-  playerLongitudeDeg: number;
+  shipLatitudeDeg: number;
+  shipLongitudeDeg: number;
+  shipAltitudeAslM: number;
+  shipLocalSolarTimeHours: number;
   planetRotationDeg: number;
   planetOrbitalAngleDeg: number;
   planetDistanceAu: number;
@@ -328,8 +330,10 @@ const defaultSimulation = (): SimulationState => ({
   playerPositionZ: 0,
   playerYaw: 0,
   playerPitch: 0,
-  playerLatitudeDeg: 51.4779,
-  playerLongitudeDeg: 0,
+  shipLatitudeDeg: 51.4779,
+  shipLongitudeDeg: 0,
+  shipAltitudeAslM: 2200,
+  shipLocalSolarTimeHours: 12,
   planetRotationDeg: 0,
   planetOrbitalAngleDeg: 0,
   planetDistanceAu: 1,
@@ -508,11 +512,14 @@ const applySimulationEvent = (event: SimulationEvent) => {
   setMainBusPowered(event.powered);
 };
 
-const stepSimulationTick = (nowMs: number) => {
+const stepSimulationTick = (_nowMs: number) => {
   const utcNowMs = Date.now();
   simulation.tick += 1;
-  simulation.heading = (simulation.heading + SIM_TICK_SECONDS * 12) % 360;
-  simulation.altitude = 2200 + Math.sin(nowMs * 0.0005) * 120;
+  simulation.altitude = simulation.shipAltitudeAslM;
+
+  const shipSolarState = getShipSolarState(utcNowMs);
+  simulation.shipLocalSolarTimeHours = shipSolarState.localSolarTimeHours;
+
   simulation.fuel = Math.max(0, simulation.fuel - SIM_TICK_SECONDS * 0.08);
 
   const levels = normalizeLevelOrder(ladderLevelOffsets.length > 0 ? ladderLevelOffsets : [0]);
@@ -1011,10 +1018,26 @@ const calculateSunElevationAzimuth = (
   return { elevationDeg, azimuthDeg };
 };
 
-const updateGlobalLightingFromUtc = (utcMs: number) => {
+const getShipSolarState = (utcMs: number): {
+  observerLatitudeDeg: number;
+  observerLongitudeDeg: number;
+  observerAltitudeAslM: number;
+  localSolarTimeHours: number;
+  elevationDeg: number;
+  azimuthDeg: number;
+} => {
   const utcNow = new Date(utcMs);
-  const observerLatitudeDeg = clampNumber(simulation.playerLatitudeDeg, -90, 90);
-  const observerLongitudeDeg = normalizeLongitudeDeg(simulation.playerLongitudeDeg);
+  const observerLatitudeDeg = clampNumber(simulation.shipLatitudeDeg, -90, 90);
+  const observerLongitudeDeg = normalizeLongitudeDeg(simulation.shipLongitudeDeg);
+  const observerAltitudeAslM = Math.max(0, simulation.shipAltitudeAslM);
+
+  const utcHours =
+    utcNow.getUTCHours() +
+    utcNow.getUTCMinutes() / 60 +
+    utcNow.getUTCSeconds() / 3600 +
+    utcNow.getUTCMilliseconds() / 3600000;
+  const localSolarTimeHours = ((utcHours + (observerLongitudeDeg / 15)) % 24 + 24) % 24;
+
   const { latitudeDeg: subsolarLat, longitudeDeg: subsolarLon } = calculateSubsolarPoint(utcNow);
   const { elevationDeg, azimuthDeg } = calculateSunElevationAzimuth(
     observerLatitudeDeg,
@@ -1022,6 +1045,19 @@ const updateGlobalLightingFromUtc = (utcMs: number) => {
     subsolarLat,
     subsolarLon
   );
+
+  return {
+    observerLatitudeDeg,
+    observerLongitudeDeg,
+    observerAltitudeAslM,
+    localSolarTimeHours,
+    elevationDeg,
+    azimuthDeg
+  };
+};
+
+const updateGlobalLightingFromUtc = (utcMs: number) => {
+  const { elevationDeg, azimuthDeg, observerAltitudeAslM } = getShipSolarState(utcMs);
 
   const elevationRad = elevationDeg * DEG_TO_RAD;
   const azimuthRad = azimuthDeg * DEG_TO_RAD;
@@ -1062,8 +1098,10 @@ const updateGlobalLightingFromUtc = (utcMs: number) => {
     : clampNumber(1 - ((-elevationDeg) / 4.5), 0, 1);
   const twilightTail = elevationDeg < 0 ? 0.06 * belowHorizonTaper : 0;
   const directSunFactor = (sunAboveFactor * belowHorizonTaper) + twilightTail;
-  sunLight.intensity = distanceFactor * directSunFactor * 2.45;
-  ambientLight.intensity = distanceFactor * (0.03 + directSunFactor * 0.31);
+  const altitudeBoost = 1 + clampNumber(observerAltitudeAslM / 12000, 0, 0.16);
+  const altitudeAmbientDamping = 1 - clampNumber(observerAltitudeAslM / 22000, 0, 0.12);
+  sunLight.intensity = distanceFactor * directSunFactor * 2.45 * altitudeBoost;
+  ambientLight.intensity = distanceFactor * (0.03 + directSunFactor * 0.31) * altitudeAmbientDamping;
   sunLight.castShadow = directSunFactor > 0.015;
 
   const warmFactor = clampNumber((9 - elevationDeg) / 14, 0, 1);
@@ -1557,20 +1595,12 @@ const getSolarChargeEffectiveness = (utcMs: number): number => {
     return 0;
   }
 
-  const utcNow = new Date(utcMs);
-  const observerLatitudeDeg = clampNumber(simulation.playerLatitudeDeg, -90, 90);
-  const observerLongitudeDeg = normalizeLongitudeDeg(simulation.playerLongitudeDeg);
-  const { latitudeDeg: subsolarLat, longitudeDeg: subsolarLon } = calculateSubsolarPoint(utcNow);
-  const { elevationDeg } = calculateSunElevationAzimuth(
-    observerLatitudeDeg,
-    observerLongitudeDeg,
-    subsolarLat,
-    subsolarLon
-  );
+  const { elevationDeg, observerAltitudeAslM } = getShipSolarState(utcMs);
 
   const sunFacingFactor = Math.max(0, Math.sin(elevationDeg * DEG_TO_RAD));
   const distanceFactor = 1 / Math.max(0.25, simulation.planetDistanceAu) ** 2;
-  return clampNumber(sunFacingFactor * distanceFactor, 0, 1);
+  const altitudeBoost = 1 + clampNumber(observerAltitudeAslM / 12000, 0, 0.16);
+  return clampNumber(sunFacingFactor * distanceFactor * altitudeBoost, 0, 1);
 };
 
 const getElectricalTelemetry = (utcMs: number) => {
