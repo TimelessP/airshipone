@@ -34,7 +34,7 @@ export interface ElectricalTelemetry {
 
 export interface ElectricalTickInput {
   tickSeconds: number;
-  hasBatterySupplyModule: boolean;
+  batterySupplyModuleCount: number;
   solarEffectiveness: number;
 }
 
@@ -42,6 +42,14 @@ export interface ElectricalTickOutput {
   batteryACharge: number;
   batteryBCharge: number;
   telemetry: ElectricalTelemetry;
+}
+
+export interface BatteryRuntimeEstimate {
+  netBatteryDrainCurrentA: number;
+  totalHours: number;
+  stageSharedHours: number;
+  stageTrailingHours: number;
+  trailingBattery: 'A' | 'B' | null;
 }
 
 const clamp = (value: number, min: number, max: number): number => {
@@ -107,6 +115,63 @@ export const getElectricalTelemetry = (
   };
 };
 
+export const estimateBatteryRuntime = (
+  state: ElectricalState,
+  input: { batterySupplyModuleCount: number; solarEffectiveness: number },
+  config: ElectricalConfig = DEFAULT_ELECTRICAL_CONFIG
+): BatteryRuntimeEstimate | null => {
+  const batterySupplyModuleCount = Math.max(0, Math.floor(input.batterySupplyModuleCount));
+  if (batterySupplyModuleCount <= 0) {
+    return null;
+  }
+
+  const batteryCapacityAh = config.batteryBankCapacityAh * Math.max(1, batterySupplyModuleCount);
+  const batteryAAvailableAh =
+    state.batteryAConnectedToBus && state.batteryACharge > 0.001 ? (clampPercent(state.batteryACharge) / 100) * batteryCapacityAh : 0;
+  const batteryBAvailableAh =
+    state.batteryBConnectedToBus && state.batteryBCharge > 0.001 ? (clampPercent(state.batteryBCharge) / 100) * batteryCapacityAh : 0;
+
+  if (batteryAAvailableAh <= 0 && batteryBAvailableAh <= 0) {
+    return null;
+  }
+
+  const loadCurrentA = getElectricalLoadCurrentA(state, config);
+  const solarChargeCurrentA = getSolarChargeCurrentA(state, input.solarEffectiveness, config);
+  const netBatteryDrainCurrentA = loadCurrentA - solarChargeCurrentA;
+  if (netBatteryDrainCurrentA <= 0) {
+    return null;
+  }
+
+  if (batteryAAvailableAh > 0 && batteryBAvailableAh > 0) {
+    const sharedDrainCurrentA = netBatteryDrainCurrentA / 2;
+    const weakerAh = Math.min(batteryAAvailableAh, batteryBAvailableAh);
+    const strongerAh = Math.max(batteryAAvailableAh, batteryBAvailableAh);
+    const stageSharedHours = sharedDrainCurrentA > 0 ? weakerAh / sharedDrainCurrentA : 0;
+    const stageTrailingHours = (strongerAh - weakerAh) / netBatteryDrainCurrentA;
+    const trailingBattery = batteryAAvailableAh > batteryBAvailableAh ? 'A' : batteryBAvailableAh > batteryAAvailableAh ? 'B' : null;
+
+    return {
+      netBatteryDrainCurrentA,
+      totalHours: stageSharedHours + stageTrailingHours,
+      stageSharedHours,
+      stageTrailingHours,
+      trailingBattery
+    };
+  }
+
+  const availableAh = batteryAAvailableAh > 0 ? batteryAAvailableAh : batteryBAvailableAh;
+  const trailingBattery: 'A' | 'B' = batteryAAvailableAh > 0 ? 'A' : 'B';
+  const hours = availableAh / netBatteryDrainCurrentA;
+
+  return {
+    netBatteryDrainCurrentA,
+    totalHours: hours,
+    stageSharedHours: 0,
+    stageTrailingHours: hours,
+    trailingBattery
+  };
+};
+
 export const stepElectricalTick = (
   state: ElectricalState,
   input: ElectricalTickInput,
@@ -118,12 +183,15 @@ export const stepElectricalTick = (
   let batteryACharge = nextBatteryACharge;
   let batteryBCharge = nextBatteryBCharge;
 
-  const activeBatteryCount = input.hasBatterySupplyModule ? getConnectedChargedBatteryCount(state) : 0;
+  const batterySupplyModuleCount = Math.max(0, Math.floor(input.batterySupplyModuleCount));
+  const hasBatterySupplyModule = batterySupplyModuleCount > 0;
+  const effectiveBatteryBankCapacityAh = config.batteryBankCapacityAh * Math.max(1, batterySupplyModuleCount);
+  const activeBatteryCount = hasBatterySupplyModule ? getConnectedChargedBatteryCount(state) : 0;
 
   const loadCurrentA = getElectricalLoadCurrentA(state, config);
   if (activeBatteryCount > 0 && loadCurrentA > 0) {
     const perBatteryDischargeCurrentA = loadCurrentA / activeBatteryCount;
-    const perBatteryDrainPct = ((perBatteryDischargeCurrentA * input.tickSeconds) / (3600 * config.batteryBankCapacityAh)) * 100;
+    const perBatteryDrainPct = ((perBatteryDischargeCurrentA * input.tickSeconds) / (3600 * effectiveBatteryBankCapacityAh)) * 100;
     if (state.batteryAConnectedToBus) {
       batteryACharge = clampPercent(batteryACharge - perBatteryDrainPct);
     }
@@ -132,10 +200,10 @@ export const stepElectricalTick = (
     }
   }
 
-  const solarChargeCurrentA = input.hasBatterySupplyModule ? getSolarChargeCurrentA(state, input.solarEffectiveness, config) : 0;
+  const solarChargeCurrentA = hasBatterySupplyModule ? getSolarChargeCurrentA(state, input.solarEffectiveness, config) : 0;
   if (solarChargeCurrentA > 0) {
     const perBatteryChargeCurrentA = solarChargeCurrentA / 2;
-    const perBatteryChargePct = ((perBatteryChargeCurrentA * input.tickSeconds) / (3600 * config.batteryBankCapacityAh)) * 100;
+    const perBatteryChargePct = ((perBatteryChargeCurrentA * input.tickSeconds) / (3600 * effectiveBatteryBankCapacityAh)) * 100;
     batteryACharge = clampPercent(batteryACharge + perBatteryChargePct);
     batteryBCharge = clampPercent(batteryBCharge + perBatteryChargePct);
   }
@@ -146,7 +214,7 @@ export const stepElectricalTick = (
       batteryACharge,
       batteryBCharge
     },
-    input.hasBatterySupplyModule,
+    hasBatterySupplyModule,
     input.solarEffectiveness,
     config
   );

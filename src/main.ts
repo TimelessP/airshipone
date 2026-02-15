@@ -17,6 +17,7 @@ import { registerServiceWorker } from './pwa/register-sw';
 import {
   DEFAULT_ELECTRICAL_CONFIG,
   computeMainBusPowered as computeMainBusPoweredForState,
+  estimateBatteryRuntime,
   getElectricalTelemetry as getElectricalTelemetryForState,
   stepElectricalTick
 } from './sim/electrical';
@@ -138,7 +139,8 @@ type LiveValueBindingKey =
   | 'solar-effectiveness'
   | 'solar-charge-current'
   | 'load-current'
-  | 'net-battery-current';
+  | 'net-battery-current'
+  | 'battery-runtime';
 
 interface BatteryMenuStats {
   mainBusConnected: boolean;
@@ -152,6 +154,8 @@ interface BatteryMenuStats {
   solarChargeCurrentA: number;
   loadCurrentA: number;
   netBatteryCurrentA: number;
+  batterySupplyModuleCount: number;
+  batteryRuntimeEstimate: string;
 }
 
 interface SaveEnvelope {
@@ -402,6 +406,7 @@ const simulationEventQueue: SimulationEvent[] = [];
 const SIM_TICK_HZ = 25;
 const SIM_TICK_SECONDS = 1 / SIM_TICK_HZ;
 const SIM_MAX_CATCHUP_STEPS = 5;
+const BATTERY_MENU_STATS_EVENT_MIN_INTERVAL_MS = 250;
 const HELM_RUDDER_REPORT_INTERVAL_MS = 600;
 const HELM_WHEEL_MIN_DEG = -120;
 const HELM_WHEEL_MAX_DEG = 120;
@@ -417,12 +422,106 @@ const formatBatteryPercent = (value: number): string => {
   return `${value.toFixed(1)}%`;
 };
 
+const formatRuntimeDuration = (hours: number): string => {
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return '0m';
+  }
+
+  const totalMinutes = Math.max(1, Math.round(hours * 60));
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hoursPart = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutesPart = totalMinutes % 60;
+
+  if (days > 0) {
+    return `${days}d ${hoursPart}h`;
+  }
+  if (hoursPart > 0) {
+    return `${hoursPart}h ${minutesPart}m`;
+  }
+  return `${minutesPart}m`;
+};
+
+const buildBatteryRuntimeEstimateLabel = (stats: {
+  batterySupplyModuleCount: number;
+  solarEffectiveness: number;
+  loadCurrentA: number;
+  netBatteryCurrentA: number;
+}): string => {
+  if (stats.batterySupplyModuleCount <= 0) {
+    return 'N/A (no battery modules)';
+  }
+
+  const hasConnectedChargedBattery =
+    (simulation.batteryAConnectedToBus && simulation.batteryACharge > 0.001) ||
+    (simulation.batteryBConnectedToBus && simulation.batteryBCharge > 0.001);
+  if (!hasConnectedChargedBattery) {
+    return 'N/A (no connected charged battery)';
+  }
+
+  if (stats.loadCurrentA <= 0) {
+    return 'No active battery draw';
+  }
+
+  if (stats.netBatteryCurrentA >= 0) {
+    return 'Holding/charging at current solar input';
+  }
+
+  const estimate = estimateBatteryRuntime(
+    {
+      batteryACharge: simulation.batteryACharge,
+      batteryBCharge: simulation.batteryBCharge,
+      batteryAConnectedToBus: simulation.batteryAConnectedToBus,
+      batteryBConnectedToBus: simulation.batteryBConnectedToBus,
+      solarPanelsConnected: simulation.solarPanelsConnected,
+      mainBusConnected: simulation.mainBusConnected,
+      lightsMainOn: simulation.lightsMainOn
+    },
+    {
+      batterySupplyModuleCount: stats.batterySupplyModuleCount,
+      solarEffectiveness: stats.solarEffectiveness
+    },
+    ELECTRICAL_CONFIG
+  );
+
+  if (!estimate) {
+    return 'Estimate unavailable';
+  }
+
+  if (estimate.stageSharedHours > 0 && estimate.stageTrailingHours > 0 && estimate.trailingBattery) {
+    return `A+B ${formatRuntimeDuration(estimate.stageSharedHours)} then ${estimate.trailingBattery} +${formatRuntimeDuration(estimate.stageTrailingHours)} (total ${formatRuntimeDuration(estimate.totalHours)})`;
+  }
+
+  if (estimate.stageSharedHours > 0) {
+    return `A+B ${formatRuntimeDuration(estimate.totalHours)}`;
+  }
+
+  if (estimate.trailingBattery) {
+    return `${estimate.trailingBattery} ${formatRuntimeDuration(estimate.totalHours)}`;
+  }
+
+  return formatRuntimeDuration(estimate.totalHours);
+};
+
 const enqueueSimulationEvent = (event: SimulationEvent) => {
   simulationEventQueue.push(event);
 };
 
 const getBatteryMenuStatsSnapshot = (): BatteryMenuStats => ({
-  ...getElectricalTelemetry(simulation.updatedAt || Date.now()),
+  ...(() => {
+    const telemetry = getElectricalTelemetry(simulation.updatedAt || Date.now());
+    const batterySupplyModuleCount = getBatterySupplyModuleCount();
+    const batteryRuntimeEstimate = buildBatteryRuntimeEstimateLabel({
+      batterySupplyModuleCount,
+      solarEffectiveness: telemetry.solarEffectiveness,
+      loadCurrentA: telemetry.loadCurrentA,
+      netBatteryCurrentA: telemetry.netBatteryCurrentA
+    });
+    return {
+      ...telemetry,
+      batterySupplyModuleCount,
+      batteryRuntimeEstimate
+    };
+  })(),
   mainBusConnected: simulation.mainBusConnected,
   solarPanelsConnected: simulation.solarPanelsConnected,
   batteryAConnectedToBus: simulation.batteryAConnectedToBus,
@@ -444,19 +543,33 @@ const serializeBatteryMenuStats = (stats: BatteryMenuStats): string => {
     stats.solarEffectiveness.toFixed(6),
     stats.solarChargeCurrentA.toFixed(6),
     stats.loadCurrentA.toFixed(6),
-    stats.netBatteryCurrentA.toFixed(6)
+    stats.netBatteryCurrentA.toFixed(6),
+    String(stats.batterySupplyModuleCount),
+    stats.batteryRuntimeEstimate
   ].join('|');
 };
 
 let lastBatteryMenuStatsSignature = '';
+let lastBatteryMenuStatsEventAtMs = 0;
 let lastHelmRudderReportAtMs = 0;
 
 const enqueueBatteryMenuStatsIfChanged = () => {
+  if (!isBatteryControlMenuVisible()) {
+    return;
+  }
+
   const stats = getBatteryMenuStatsSnapshot();
   const signature = serializeBatteryMenuStats(stats);
   if (signature === lastBatteryMenuStatsSignature) {
     return;
   }
+
+  const nowMs = Date.now();
+  if (nowMs - lastBatteryMenuStatsEventAtMs < BATTERY_MENU_STATS_EVENT_MIN_INTERVAL_MS) {
+    return;
+  }
+
+  lastBatteryMenuStatsEventAtMs = nowMs;
   lastBatteryMenuStatsSignature = signature;
   enqueueSimulationEvent({ type: 'ui/battery-menu-stats', stats });
 };
@@ -548,10 +661,8 @@ const stepSimulationTick = (_nowMs: number) => {
 
   simulation.fuel = Math.max(0, simulation.fuel - SIM_TICK_SECONDS * 0.08);
 
-  const levels = normalizeLevelOrder(ladderLevelOffsets.length > 0 ? ladderLevelOffsets : [0]);
-  const hasBatterySupplyModule = levels.some((levelOffset) => {
-    return getModuleChainForLevel(levelOffset).some((moduleDoc) => isBatterySupplyModuleId(moduleDoc.id));
-  });
+  const batterySupplyModuleCount = getBatterySupplyModuleCount();
+  const hasBatterySupplyModule = batterySupplyModuleCount > 0;
   const nextElectricalState = stepElectricalTick(
     {
       batteryACharge: simulation.batteryACharge,
@@ -564,7 +675,7 @@ const stepSimulationTick = (_nowMs: number) => {
     },
     {
       tickSeconds: SIM_TICK_SECONDS,
-      hasBatterySupplyModule,
+      batterySupplyModuleCount,
       solarEffectiveness: hasBatterySupplyModule ? getSolarChargeEffectiveness(utcNowMs) : 0
     },
     ELECTRICAL_CONFIG
@@ -1248,22 +1359,28 @@ const getMaterial = (block: ModuleBlock): THREE.MeshStandardMaterial => {
   let repeatX = 1;
   let repeatY = 1;
   let repeatKey = 'base';
+  const isWallBlock = block.role.includes('wall') || block.role.includes('bulkhead');
   if (block.material.uvMode === 'repeat' && block.primitive === 'box') {
-    const [sizeX, sizeY, sizeZ] = getVector3(block.size, `block size (${block.id})`);
-    // Pick repeat pair for the dominant visible face (the one
-    // perpendicular to the thinnest axis) so texels stay square.
-    //  Thin in X (side walls, window strips):  ±X face → repeat(sizeZ, sizeY)
-    //  Thin in Z (bulkheads, front walls):     ±Z face → repeat(sizeX, sizeY)
-    //  Thin in Y (floors, desk tops):          ±Y face → repeat(sizeX, sizeZ)
-    if (sizeX <= sizeY && sizeX <= sizeZ) {
-      repeatX = Math.max(0.01, sizeZ);
-      repeatY = Math.max(0.01, sizeY);
-    } else if (sizeZ <= sizeX && sizeZ <= sizeY) {
-      repeatX = Math.max(0.01, sizeX);
-      repeatY = Math.max(0.01, sizeY);
+    if (isWallBlock) {
+      repeatX = 1;
+      repeatY = 1;
     } else {
-      repeatX = Math.max(0.01, sizeX);
-      repeatY = Math.max(0.01, sizeZ);
+      const [sizeX, sizeY, sizeZ] = getVector3(block.size, `block size (${block.id})`);
+      // Pick repeat pair for the dominant visible face (the one
+      // perpendicular to the thinnest axis) so texels stay square.
+      //  Thin in X (side walls, window strips):  ±X face → repeat(sizeZ, sizeY)
+      //  Thin in Z (bulkheads, front walls):     ±Z face → repeat(sizeX, sizeY)
+      //  Thin in Y (floors, desk tops):          ±Y face → repeat(sizeX, sizeZ)
+      if (sizeX <= sizeY && sizeX <= sizeZ) {
+        repeatX = Math.max(0.01, sizeZ);
+        repeatY = Math.max(0.01, sizeY);
+      } else if (sizeZ <= sizeX && sizeZ <= sizeY) {
+        repeatX = Math.max(0.01, sizeX);
+        repeatY = Math.max(0.01, sizeY);
+      } else {
+        repeatX = Math.max(0.01, sizeX);
+        repeatY = Math.max(0.01, sizeZ);
+      }
     }
     repeatKey = `${repeatX.toFixed(3)}x${repeatY.toFixed(3)}`;
   }
@@ -1545,6 +1662,18 @@ const getTrackedLevelOffsets = (): number[] => {
   return normalizeLevelOrder([0, ...ladderLevelOffsets]);
 };
 
+const getBatterySupplyModuleCount = (): number => {
+  let count = 0;
+  for (const levelOffset of getTrackedLevelOffsets()) {
+    for (const moduleDoc of getModuleChainForLevel(levelOffset)) {
+      if (isBatterySupplyModuleId(moduleDoc.id)) {
+        count += 1;
+      }
+    }
+  }
+  return count;
+};
+
 const getVolumeLevelOffset = (volume: ModuleVolume): number | null => {
   const match = volume.id.match(/:L(-?\d+)$/);
   if (!match || !match[1]) {
@@ -1657,10 +1786,7 @@ const hydrateFloorModuleIdsByLevel = () => {
 };
 
 const computeMainBusPowered = (): boolean => {
-  const levels = getTrackedLevelOffsets();
-  const hasBatterySupplyModule = levels.some((levelOffset) => {
-    return getModuleChainForLevel(levelOffset).some((moduleDoc) => isBatterySupplyModuleId(moduleDoc.id));
-  });
+  const hasBatterySupplyModule = getBatterySupplyModuleCount() > 0;
   return computeMainBusPoweredForState(
     {
       batteryACharge: simulation.batteryACharge,
@@ -1689,10 +1815,7 @@ const getSolarChargeEffectiveness = (utcMs: number): number => {
 };
 
 const getElectricalTelemetry = (utcMs: number) => {
-  const levels = getTrackedLevelOffsets();
-  const hasBatterySupplyModule = levels.some((levelOffset) => {
-    return getModuleChainForLevel(levelOffset).some((moduleDoc) => isBatterySupplyModuleId(moduleDoc.id));
-  });
+  const hasBatterySupplyModule = getBatterySupplyModuleCount() > 0;
   const solarEffectiveness = hasBatterySupplyModule ? getSolarChargeEffectiveness(utcMs) : 0;
   const telemetry = getElectricalTelemetryForState(
     {
@@ -2397,6 +2520,7 @@ const getLiveValueText = (key: LiveValueBindingKey, stats: BatteryMenuStats): st
     return `${stats.solarChargeCurrentA.toFixed(1)} A (${ELECTRICAL_CONFIG.solarArrayNominalVoltageV} V array → ${ELECTRICAL_CONFIG.mainBusNominalVoltageV} V bus)`;
   }
   if (key === 'load-current') return `${stats.loadCurrentA.toFixed(1)} A @ ${ELECTRICAL_CONFIG.mainBusNominalVoltageV} V`;
+  if (key === 'battery-runtime') return stats.batteryRuntimeEstimate;
   const netLabel = stats.netBatteryCurrentA >= 0 ? '+' : '';
   return `${netLabel}${stats.netBatteryCurrentA.toFixed(1)} A`;
 };
@@ -4196,6 +4320,12 @@ const buildBatteryControlItems = (): MenuItem[] => {
     label: 'Net Battery Current',
     value: `${telemetry.netBatteryCurrentA >= 0 ? '+' : ''}${telemetry.netBatteryCurrentA.toFixed(1)} A`,
     liveValueKey: 'net-battery-current'
+  },
+  {
+    type: 'text',
+    label: 'Estimated Runtime',
+    value: getBatteryMenuStatsSnapshot().batteryRuntimeEstimate,
+    liveValueKey: 'battery-runtime'
   }
 ];
 };

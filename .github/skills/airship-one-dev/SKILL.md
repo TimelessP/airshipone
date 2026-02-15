@@ -29,6 +29,7 @@ Keep contributors aligned on:
 - Module generation model: parameterized generator profiles for generic module types and exact module variants (`--interior-profile auto|none|captains-cabin`).
 - Module runtime registry model: one handler file per module template under `src/modules/handlers/*.ts`, with `src/modules/registry.ts` as the single wiring point for fixed modules, insertable modules, and capability metadata (e.g., battery supply).
 - Lighting model (current scaffold): UTC-driven global sun + ambient derived from authoritative ship geo-time state (lat/lon/ASL + UTC) and planet parameters.
+- Electrical model (current scaffold): effective battery capacity and percent drain/charge rates scale with installed battery-supply module count across all active ladder floors.
 - Sky model (current scaffold): parameterized procedural sky dome (day/sunset/night gradients, sun-centered tinting, contiguous evolving cloud coverage).
 - Generated version artifacts:
   - `public/version.js` (local/dev fallback and build-time overwrite),
